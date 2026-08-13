@@ -69,7 +69,7 @@ export default function ChatView({
     <div className="flex flex-col h-full w-full min-w-0 overflow-hidden">
       {/* Header */}
       <div className="min-h-14 sm:min-h-16 border-b px-3 sm:px-4 flex items-center gap-2 sm:gap-3 z-10 flex-shrink-0 glass-panel" style={{ background: 'var(--header-bg)', borderColor: 'var(--header-border)' }}>
-        <button onClick={onBack} className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition-colors flex-shrink-0">
+        <button onClick={onBack} aria-label="Back to conversations" className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition-colors flex-shrink-0">
           <ArrowLeft className="w-5 h-5 text-foreground/60" />
         </button>
         <button
@@ -90,7 +90,7 @@ export default function ChatView({
               : conversation?.participant_name?.[0]?.toUpperCase()}
         </button>
         <div className="flex-1 min-w-0">
-          <h2
+          <h1
             className="font-semibold text-base text-foreground truncate cursor-pointer hover:opacity-70 transition-opacity"
             onClick={() => {
               if (!conversation?.is_group) {
@@ -98,7 +98,7 @@ export default function ChatView({
                 if (otherId) setContactProfileUserId(otherId);
               }
             }}
-          >{conversation?.participant_name}</h2>
+          >{conversation?.participant_name}</h1>
           <div className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
             {othersTyping.length > 0 ? (
               <span>typing...</span>

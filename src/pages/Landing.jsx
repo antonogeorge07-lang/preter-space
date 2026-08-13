@@ -382,6 +382,7 @@ export default function Landing() {
                           placeholder="Password" autoComplete="current-password"
                           className="w-full px-4 py-3.5 pr-12 bg-transparent text-sm focus:outline-none" style={{ color: 'var(--foreground)' }} />
                         <button type="button" onClick={() => setShowPassword(v => !v)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
                           className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted)' }}>
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>

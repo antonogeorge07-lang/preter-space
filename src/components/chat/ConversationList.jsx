@@ -72,7 +72,7 @@ export default function ConversationList({ conversations, activeId, onSelect, is
               <button onClick={onProfileClick} className="p-2 rounded-xl hover:bg-black/5 transition-colors" title="Profile">
                 <UserCircle className="w-5 h-5 text-foreground/40" />
               </button>
-              <button onClick={onClose} className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition-colors">
+              <button onClick={onClose} aria-label="Close conversation list" className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition-colors">
                 <X className="w-5 h-5 text-foreground/40" />
               </button>
             </div>
@@ -168,6 +168,7 @@ export default function ConversationList({ conversations, activeId, onSelect, is
 
                     <button
                       onClick={(e) => handleContextMenu(e, conv)}
+                      aria-label="Conversation options"
                       className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-black/5 transition-all flex-shrink-0 hidden sm:flex"
                       style={{ color: 'var(--muted)' }}>
                       <span className="text-base leading-none">⋯</span>
