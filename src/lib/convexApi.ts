@@ -9,6 +9,9 @@ export const convexApi = {
   users: {
     getByEmail: fn.query<{ email: string }, ConvexUser | null>("users:getByEmail"),
     search: fn.query<{ term: string; excludeEmail?: string }, ConvexUser[]>("users:search"),
+    languagesByEmail: fn.query<{ emails: string[] }, Record<string, string>>(
+      "users:languagesByEmail",
+    ),
     createOrUpdateUser: fn.mutation<
       { name: string; email: string; language?: string; avatarUrl?: string },
       string

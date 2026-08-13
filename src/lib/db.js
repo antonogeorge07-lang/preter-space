@@ -167,6 +167,8 @@ const auth = {
       avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url || null,
       bio: profile?.bio || "",
       default_language: profile?.default_language || "en",
+      // True only when the user has explicitly chosen a language (not the fallback).
+      language_set: !!profile?.default_language,
       blocked_user_ids: profile?.blocked_user_ids || [],
       active_sessions: profile?.active_sessions || [],
       created_date: profile?.created_at,

@@ -353,7 +353,15 @@ export default function Landing() {
 
   const switchMode = (m) => { setMode(m); setStep('entry'); setError(''); setOtp(''); setPassword(''); };
 
-  const handleGoogleSignIn = () => db.auth.loginWithProvider('google', '/');
+  const handleGoogleSignIn = async () => {
+    setLoading(true); setError('');
+    try {
+      await db.auth.loginWithProvider('google', '/');
+    } catch {
+      setError('Google sign-in could not start. Please try again or use your email and password.');
+      setLoading(false);
+    }
+  };
 
   const handleSignIn = async (e) => {
     e.preventDefault();

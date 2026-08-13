@@ -25,19 +25,33 @@ export function useChatIdentity(currentUser) {
 
   useEffect(() => {
     if (!key) return;
+    // Only send `language` when the profile actually carries an explicit choice,
+    // otherwise a default of "en" would overwrite the language the user picked.
+    const explicitLang = currentUser?.language_set ? currentUser?.default_language : null;
     upsertUser({
       name: currentUser?.full_name || key,
       email: key,
-      language: currentUser?.default_language || 'en',
+      ...(explicitLang ? { language: explicitLang } : {}),
       ...(currentUser?.avatar_url ? { avatarUrl: currentUser.avatar_url } : {}),
     }).catch(() => {});
-  }, [key, currentUser?.full_name, currentUser?.default_language, currentUser?.avatar_url]);
+  }, [key, currentUser?.full_name, currentUser?.default_language, currentUser?.language_set, currentUser?.avatar_url]);
 
   return {
     key,
     convexUser: convexUser ?? null,
+    myLanguage: convexUser?.language || null,
     blockedUserIds: convexUser?.blockedUsers || [],
   };
+}
+
+/** Live language preferences for a set of participants, keyed by email. */
+export function useParticipantLanguages(emails) {
+  const list = useMemo(() => [...new Set((emails || []).filter(Boolean))].sort(), [emails?.join('|')]);
+  const langs = useConvexQuery(
+    convexApi.users.languagesByEmail,
+    list.length ? { emails: list } : SKIP,
+  );
+  return langs || {};
 }
 
 /** Live list of the current user's conversations, in UI shape. */

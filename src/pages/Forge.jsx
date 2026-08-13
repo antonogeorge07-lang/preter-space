@@ -3,6 +3,7 @@ import { useNavigate, useParams } from '@/lib/router-compat';
 
 import { db } from '@/lib/db';
 import { detectAndTranslate } from '@/lib/translation';
+import saveUserLanguage from '@/lib/saveUserLanguage';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import {
   useChatIdentity,
@@ -11,6 +12,7 @@ import {
   useChatPresence,
   useReadReceipts,
   useChatMutations,
+  useParticipantLanguages,
 } from '@/hooks/useConvexChat';
 import { safeJson } from '@/lib/chatMap';
 import { convexChat } from '@/lib/convexChat';
@@ -56,7 +58,7 @@ export default function Forge() {
   const [lastSeenMessageId, setLastSeenMessageId] = useState(null);
 
   // ── Convex identity (participants are keyed by email) ────────────────────
-  const { key: myKey, blockedUserIds } = useChatIdentity(authUser);
+  const { key: myKey, myLanguage, blockedUserIds } = useChatIdentity(authUser);
   const currentUser = useMemo(
     () => (authUser ? { ...authUser, id: myKey || authUser.id, auth_id: authUser.id } : null),
     [authUser, myKey],
@@ -79,6 +81,9 @@ export default function Forge() {
   const { messages, messageDocs, hasMore: hasMoreMessages, loadingOlder, loadOlder } =
     useChatMessages(chatId, { blockedUserIds });
   useReadReceipts({ conversationId: chatId, key: myKey, messageDocs });
+
+  // ── Live language preferences of everyone in this conversation ───────────
+  const participantLanguages = useParticipantLanguages(activeConversation?.participant_ids || []);
 
   // ── Live presence + typing ───────────────────────────────────────────────
   const otherKey = (activeConversation?.participant_ids || []).find((id) => id !== myKey) || null;
@@ -150,21 +155,24 @@ export default function Forge() {
     [messages, myKey],
   );
 
-  // Get current user's preferred language for this conversation
-  const getMyLang = useCallback(
-    (conv) => {
-      if (!conv || !myKey) return conv?.preferred_language || 'en';
-      const langs = safeJson(conv.participant_languages, {});
-      return langs[myKey] || conv.preferred_language || 'en';
+  // Each participant's own account language is the source of truth for
+  // "which language do I read in"; the conversation row is only a fallback.
+  const getParticipantLang = useCallback(
+    (conv, userId) => {
+      if (!userId) return conv?.preferred_language || 'en';
+      if (userId === myKey && myLanguage) return myLanguage;
+      if (participantLanguages[userId]) return participantLanguages[userId];
+      const langs = safeJson(conv?.participant_languages, {});
+      return langs[userId] || conv?.preferred_language || 'en';
     },
-    [myKey],
+    [myKey, myLanguage, participantLanguages],
   );
 
-  const getParticipantLang = useCallback((conv, userId) => {
-    if (!conv || !userId) return conv?.preferred_language || 'en';
-    const langs = safeJson(conv.participant_languages, {});
-    return langs[userId] || conv.preferred_language || 'en';
-  }, []);
+  // Get current user's preferred language for this conversation
+  const getMyLang = useCallback(
+    (conv) => getParticipantLang(conv, myKey),
+    [getParticipantLang, myKey],
+  );
 
   // Clear my unread counter when opening a conversation
   useEffect(() => {
@@ -349,14 +357,17 @@ export default function Forge() {
 
   const handleLanguageChange = useCallback(
     async (langCode) => {
-      if (!activeConversation || !myKey) return;
+      if (!myKey) return;
+      // Persist on the account first so it applies everywhere, then on the thread.
+      await saveUserLanguage(langCode, authUser).catch(() => {});
+      if (!activeConversation) return;
       const langs = safeJson(activeConversation.participant_languages, {});
       await updateConversation(activeConversation.id, {
         participant_languages: { ...langs, [myKey]: langCode },
         preferred_language: langCode,
       });
     },
-    [activeConversation, myKey, updateConversation],
+    [activeConversation, authUser, myKey, updateConversation],
   );
 
   const handleImageSend = useCallback(
