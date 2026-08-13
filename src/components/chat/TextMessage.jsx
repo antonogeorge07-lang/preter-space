@@ -75,7 +75,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
       <div className={`max-w-[68%] sm:max-w-[60%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
         {/* Reply preview */}
         {message.reply_to_id && (
-          <div className={`mb-1.5 px-3 py-1.5 rounded-xl border-l-2 text-xs opacity-70 ${isMe ? 'border-indigo-400' : 'border-indigo-300'}`}
+          <div className={`mb-1.5 px-3 py-1.5 rounded-xl border-l-2 text-xs opacity-70 ${isMe ? 'border-primary' : 'border-primary/60'}`}
             style={{ background: 'var(--glass-bg-subtle)' }}>
             <span className="font-semibold block text-foreground/70">{message.reply_to_sender}</span>
             <span className="truncate block max-w-[200px] text-foreground/50">{message.reply_to_content}</span>

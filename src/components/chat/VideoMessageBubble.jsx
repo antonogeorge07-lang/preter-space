@@ -27,7 +27,7 @@ export default function VideoMessageBubble({ message, preferredLang }) {
               whileTap={{ scale: 0.95 }}
               className="w-16 h-16 bg-white/90 backdrop-blur-2xl rounded-2xl flex items-center justify-center shadow-xl"
             >
-              <Play className="w-8 h-8 text-indigo-700 ml-0.5" />
+              <Play className="w-8 h-8 text-primary ml-0.5" />
             </motion.div>
 
             {/* Auto Captions Overlay */}
@@ -38,7 +38,7 @@ export default function VideoMessageBubble({ message, preferredLang }) {
             )}
 
             {hasTranslation && (
-              <div className="absolute top-4 right-4 px-3 py-1 bg-white/80 backdrop-blur-md text-indigo-700 text-xs rounded-2xl flex items-center gap-1">
+              <div className="absolute top-4 right-4 px-3 py-1 bg-white/80 backdrop-blur-md text-primary text-xs rounded-2xl flex items-center gap-1">
                 <Globe className="w-3 h-3" /> Translated
               </div>
             )}
