@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { convexChat } from '@/lib/convexChat';
 
 import { useEffect, useState } from 'react';
 
@@ -33,34 +33,38 @@ export default function ForgeGuideNode({ currentUser, conversations, loaded, onC
       const { translatedText: welcomeTranslated } = await detectAndTranslate(WELCOME_WHISPER, userLang);
       const welcomeText = welcomeTranslated || WELCOME_WHISPER;
 
-      const conv = await db.entities.Conversation.create({
-        participant_name: 'Preter Guide',
-        participant_avatar: '',
-        preferred_language: userLang,
-        participant_ids: [currentUser.id],
-        participant_names: [currentUser.full_name || currentUser.email || ''],
-        participant_languages: JSON.stringify({ [currentUser.id]: userLang }),
-        invite_code: inviteCode,
-        unread_counts: JSON.stringify({ [currentUser.id]: 1 }),
+      const conversationId = await convexChat.createConversation({
+        isGroup: false,
+        creatorId: currentUser.id,
+        participantIds: [currentUser.id],
+        title: 'Preter Guide',
+        participantNames: [currentUser.full_name || currentUser.email || ''],
+        participantLanguages: { [currentUser.id]: userLang },
+        preferredLanguage: userLang,
+        inviteCode,
+        inviteOpen: true,
+        unreadCounts: { [currentUser.id]: 1 },
         pinned: true,
         archived: false,
-        last_message_preview: welcomeText,
-        last_message_time: new Date().toISOString(),
+        lastMessagePreview: welcomeText,
       });
       if (cancelled) return;
 
-      await db.entities.Message.create({
-        conversation_id: conv.id,
-        sender_id: currentUser.id,
-        sender_name: 'Preter Guide',
-        content: WELCOME_WHISPER,
-        translated_content: welcomeText,
-        original_language: 'en',
-        target_language: userLang,
-        type: 'text',
-        is_guide: true,
+      await convexChat.sendMessage({
+        conversationId,
+        senderId: currentUser.id,
+        text: WELCOME_WHISPER,
+        translations: { [userLang]: welcomeText },
+        meta: {
+          senderName: 'Preter Guide',
+          type: 'text',
+          translatedContent: welcomeText,
+          originalLanguage: 'en',
+          targetLanguage: userLang,
+          isGuide: true,
+        },
       });
-      if (!cancelled && onConversationReady) onConversationReady(conv);
+      if (!cancelled && onConversationReady) onConversationReady({ id: conversationId });
     }
 
     setup().catch(() => {});

@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { convexChat } from '@/lib/convexChat';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,7 +30,7 @@ export default function GroupManageModal({ isOpen, onClose, conversation, curren
     if (!isAdmin || memberId === currentUser?.id) return;
     const newIds = participantIds.filter(id => id !== memberId);
     const newNames = participantNames.filter((_, i) => participantIds[i] !== memberId);
-    await db.entities.Conversation.update(conversation.id, {
+    await convexChat.updateConversation(conversation.id, {
       participant_ids: newIds,
       participant_names: newNames,
     });
@@ -42,7 +42,12 @@ export default function GroupManageModal({ isOpen, onClose, conversation, curren
     if (!inviteEmail.trim()) return;
     setInviting(true);
     try {
-      await db.users.inviteUser(inviteEmail.trim(), 'user');
+      const email = inviteEmail.trim();
+      await convexChat.updateConversation(conversation.id, {
+        participant_ids: [...participantIds, email],
+        participant_names: [...participantNames, email],
+      });
+      setMembers(prev => [...prev, { id: email, name: email }]);
       setInviteEmail('');
     } finally {
       setInviting(false);

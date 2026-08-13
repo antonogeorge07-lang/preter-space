@@ -20,8 +20,7 @@ import GroupManageModal from '@/components/chat/GroupManageModal';
 import FileAttachmentBubble from '@/components/chat/FileAttachmentBubble';
 import ContactProfileModal from '@/components/chat/ContactProfileModal';
 import { toast } from '@/components/ui/use-toast';
-import { useServerFn } from '@tanstack/react-start';
-import { blockUser, reportConversation } from '@/lib/moderation.functions';
+import { useChatMutations } from '@/hooks/useConvexChat';
 
 const LANG_MAP = Object.fromEntries(Object.entries(LANG_MAP_CODES).map(([code, name]) => [name, code]));
 const LANG_NAMES = LANG_MAP_CODES;
@@ -45,8 +44,7 @@ export default function ChatView({
   const [contactProfileUserId, setContactProfileUserId] = useState(null);
   const moreMenuRef = useRef(null);
   const [moderating, setModerating] = useState(false);
-  const callBlockUser = useServerFn(blockUser);
-  const callReportConversation = useServerFn(reportConversation);
+  const { toggleBlock, reportConversation: reportConversationMutation } = useChatMutations();
 
   const otherParticipantId = (conversation?.participant_ids || []).find(id => id !== currentUser?.id) || null;
 
@@ -55,7 +53,12 @@ export default function ChatView({
     if (!conversation?.id) return;
     setModerating(true);
     try {
-      await callReportConversation({ data: { conversationId: conversation.id, ...(otherParticipantId ? { reportedUserId: otherParticipantId } : {}) } });
+      await reportConversationMutation({
+        reporterId: currentUser.id,
+        targetId: otherParticipantId || currentUser.id,
+        conversationId: conversation.id,
+        reason: 'Reported from conversation menu',
+      });
       toast({ title: 'Report submitted', description: 'Thanks — our team will review this conversation.' });
     } catch {
       toast({ title: 'Could not submit report', description: 'Please try again in a moment.', variant: 'destructive' });
@@ -69,7 +72,7 @@ export default function ChatView({
     if (!otherParticipantId) return;
     setModerating(true);
     try {
-      await callBlockUser({ data: { userId: otherParticipantId } });
+      await toggleBlock({ email: currentUser.id, targetEmail: otherParticipantId });
       toast({ title: 'Contact blocked', description: 'They can no longer message you.' });
     } catch {
       toast({ title: 'Could not block contact', description: 'Please try again in a moment.', variant: 'destructive' });

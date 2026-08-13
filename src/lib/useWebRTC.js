@@ -1,19 +1,16 @@
-import { db } from '@/lib/db';
-
 /**
- * useWebRTC — reusable WebRTC hook that uses CallSession as signaling.
- * Supports both audio and video calls with trickle ICE.
+ * useWebRTC — WebRTC hook that uses Convex `calls` documents for signaling.
+ * Offer/answer and trickle ICE flow through Convex mutations, and the remote
+ * side is watched through a live Convex query subscription (no polling).
  */
 import { useRef, useState, useCallback, useEffect } from 'react';
+import { convexChat } from '@/lib/convexChat';
 
 // STUN + free public TURN servers for firewall traversal
-// TURN is critical for users behind symmetric NAT or strict corporate firewalls
 const ICE_SERVERS = [
-  // STUN
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun.cloudflare.com:3478' },
-  // Free public TURN — Open Relay Project (no auth required)
   {
     urls: 'turn:openrelay.metered.ca:80',
     username: 'openrelayproject',
@@ -34,19 +31,20 @@ const ICE_SERVERS = [
 export function useWebRTC({ onRemoteStream, onStateChange }) {
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
-  const sessionIdRef = useRef(null);
-  const pollRef = useRef(null);
-  const pendingCandidatesRef = useRef([]);
+  const callIdRef = useRef(null);
+  const roleRef = useRef('caller');
+  const unwatchRef = useRef(null);
   const remoteDescSetRef = useRef(false);
-  const [connState, setConnState] = useState('idle'); // idle|connecting|connected|reconnecting|failed|ended
+  const appliedCandidatesRef = useRef(0);
+  const [connState, setConnState] = useState('idle'); // idle|connecting|connected|failed|ended
 
-  const stopPoll = useCallback(() => {
-    clearInterval(pollRef.current);
-    pollRef.current = null;
+  const stopWatch = useCallback(() => {
+    try { unwatchRef.current?.(); } catch {}
+    unwatchRef.current = null;
   }, []);
 
   const cleanup = useCallback(() => {
-    stopPoll();
+    stopWatch();
     if (pcRef.current) {
       pcRef.current.onicecandidate = null;
       pcRef.current.ontrack = null;
@@ -55,21 +53,19 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
       pcRef.current = null;
     }
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
     }
-    sessionIdRef.current = null;
+    callIdRef.current = null;
     remoteDescSetRef.current = false;
-    pendingCandidatesRef.current = [];
+    appliedCandidatesRef.current = 0;
     setConnState('idle');
-  }, [stopPoll]);
+  }, [stopWatch]);
 
-  const createPC = useCallback(() => {
+  const createPC = useCallback((role, myKey) => {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 });
 
-    pc.ontrack = (e) => {
-      if (onRemoteStream) onRemoteStream(e.streams[0]);
-    };
+    pc.ontrack = (e) => { if (onRemoteStream) onRemoteStream(e.streams[0]); };
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
@@ -81,41 +77,64 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
       if (onStateChange) onStateChange(mapped);
     };
 
-    // Trickle ICE — push candidates to DB as they arrive
-    pc.onicecandidate = async (e) => {
-      if (!e.candidate || !sessionIdRef.current) return;
-      // We'll flush these in batches by re-reading + appending
-      pendingCandidatesRef.current.push(e.candidate.toJSON());
+    // Trickle ICE — push each candidate straight into Convex
+    pc.onicecandidate = (e) => {
+      if (!e.candidate || !callIdRef.current) return;
+      convexChat
+        .addCandidate({ callId: callIdRef.current, from: myKey, candidate: e.candidate.toJSON() })
+        .catch(() => {});
     };
 
+    roleRef.current = role;
     pcRef.current = pc;
     return pc;
   }, [onRemoteStream, onStateChange]);
 
-  // Flush local ICE candidates to DB every 500ms
-  const startIceFlush = useCallback((role) => {
-    const flush = setInterval(async () => {
-      if (!sessionIdRef.current || pendingCandidatesRef.current.length === 0) return;
-      const toSend = [...pendingCandidatesRef.current];
-      pendingCandidatesRef.current = [];
-      const session = await db.entities.CallSession.get(sessionIdRef.current);
-      const existing = role === 'caller'
-        ? JSON.parse(session.ice_candidates_caller || '[]')
-        : JSON.parse(session.ice_candidates_callee || '[]');
-      const field = role === 'caller' ? 'ice_candidates_caller' : 'ice_candidates_callee';
-      await db.entities.CallSession.update(sessionIdRef.current, {
-        [field]: JSON.stringify([...existing, ...toSend])
-      });
-    }, 500);
-    return flush;
-  }, []);
-
-  const applyRemoteCandidates = useCallback(async (candidates) => {
+  const applyRemoteCandidates = useCallback(async (candidates = []) => {
     if (!pcRef.current || !remoteDescSetRef.current) return;
     for (const c of candidates) {
       try { await pcRef.current.addIceCandidate(new RTCIceCandidate(c)); } catch {}
     }
   }, []);
+
+  const waitForIce = (pc) =>
+    Promise.race([
+      new Promise((res) => {
+        if (pc.iceGatheringState === 'complete') return res();
+        pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') res(); };
+      }),
+      new Promise((res) => setTimeout(res, 3000)),
+    ]);
+
+  /** Live-watch the call doc for answer / candidates / hangup. */
+  const watchCall = useCallback((callId, role) => {
+    stopWatch();
+    unwatchRef.current = convexChat.watchCall(callId, async (call) => {
+      if (!call) return;
+
+      if (['declined', 'ended', 'missed'].includes(call.status)) {
+        stopWatch();
+        setConnState('ended');
+        if (onStateChange) onStateChange('ended:' + call.status);
+        return;
+      }
+
+      if (role === 'caller' && call.answer && !remoteDescSetRef.current) {
+        remoteDescSetRef.current = true;
+        try {
+          await pcRef.current?.setRemoteDescription(new RTCSessionDescription(call.answer));
+        } catch {}
+      }
+
+      const remote = role === 'caller' ? call.calleeCandidates : call.callerCandidates;
+      const all = remote || [];
+      if (remoteDescSetRef.current && all.length > appliedCandidatesRef.current) {
+        const fresh = all.slice(appliedCandidatesRef.current);
+        appliedCandidatesRef.current = all.length;
+        await applyRemoteCandidates(fresh);
+      }
+    });
+  }, [applyRemoteCandidates, onStateChange, stopWatch]);
 
   // ─── CALLER ───────────────────────────────────────────────────────────────
   const startCall = useCallback(async ({ conversation, currentUser, callType = 'audio' }) => {
@@ -129,79 +148,42 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     localStreamRef.current = stream;
 
-    const pc = createPC();
-    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    const myKey = currentUser?.id;
+    const pc = createPC('caller', myKey);
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-    // Create offer
-    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: callType === 'video' });
-    await pc.setLocalDescription(offer);
-
-    // Wait for ICE gathering to complete (max 3s)
-    await Promise.race([
-      new Promise(res => {
-        if (pc.iceGatheringState === 'complete') return res();
-        pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') res(); };
-      }),
-      new Promise(res => setTimeout(res, 3000)),
-    ]);
-
-    const otherId = conversation?.participant_ids?.find(id => id !== currentUser?.id);
-    const callee = conversation?.participant_names?.find((_, i) => conversation.participant_ids[i] !== currentUser?.id) || conversation?.participant_name;
-
-    const session = await db.entities.CallSession.create({
-      conversation_id: conversation.id,
-      caller_id: currentUser.id,
-      caller_name: currentUser.full_name || currentUser.email,
-      callee_id: otherId,
-      callee_name: callee || 'Contact',
-      call_type: callType,
-      status: 'ringing',
-      offer_sdp: JSON.stringify(pc.localDescription),
-      ice_candidates_caller: JSON.stringify([]),
-      started_at: new Date().toISOString(),
+    const offer = await pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: callType === 'video',
     });
-    sessionIdRef.current = session.id;
+    await pc.setLocalDescription(offer);
+    await waitForIce(pc);
 
-    const iceFlushTimer = startIceFlush('caller');
+    const ids = conversation?.participant_ids || [];
+    const calleeId = ids.find((id) => id !== myKey);
+    const calleeName = conversation?.participant_names?.[ids.indexOf(calleeId)] || conversation?.participant_name;
 
-    let appliedCalleeCandidateCount = 0;
+    const callId = await convexChat.startCall({
+      ...(conversation?.id ? { conversationId: conversation.id } : {}),
+      callerId: myKey,
+      calleeId,
+      callerName: currentUser?.full_name || myKey,
+      calleeName: calleeName || 'Contact',
+      isVideo: callType === 'video',
+      offer: JSON.parse(JSON.stringify(pc.localDescription)),
+    });
+    callIdRef.current = callId;
+    watchCall(callId, 'caller');
 
-    // Poll for answer + callee ICE
-    pollRef.current = setInterval(async () => {
-      const updated = await db.entities.CallSession.get(session.id);
-
-      if (updated.status === 'declined' || updated.status === 'ended' || updated.status === 'busy') {
-        stopPoll(); clearInterval(iceFlushTimer);
-        setConnState('ended');
-        if (onStateChange) onStateChange('ended:' + updated.status);
-        return;
-      }
-
-      if (updated.answer_sdp && !remoteDescSetRef.current) {
-        remoteDescSetRef.current = true;
-        const answer = JSON.parse(updated.answer_sdp);
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-
-      if (remoteDescSetRef.current && updated.ice_candidates_callee) {
-        const all = JSON.parse(updated.ice_candidates_callee);
-        const newOnes = all.slice(appliedCalleeCandidateCount);
-        if (newOnes.length > 0) {
-          appliedCalleeCandidateCount += newOnes.length;
-          await applyRemoteCandidates(newOnes);
-        }
-      }
-    }, 1500);
-
-    return { session, stream };
-  }, [cleanup, createPC, startIceFlush, stopPoll, applyRemoteCandidates, onStateChange]);
+    return { session: { id: callId }, stream };
+  }, [cleanup, createPC, watchCall]);
 
   // ─── CALLEE ───────────────────────────────────────────────────────────────
   const answerCall = useCallback(async ({ incomingSession, currentUser }) => {
     cleanup();
     setConnState('connecting');
 
-    const callType = incomingSession.call_type || 'audio';
+    const callType = incomingSession.call_type || (incomingSession.isVideo ? 'video' : 'audio');
     const constraints = callType === 'video'
       ? { audio: true, video: { width: 1280, height: 720, facingMode: 'user' } }
       : { audio: true };
@@ -209,118 +191,63 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     localStreamRef.current = stream;
 
-    const pc = createPC();
-    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    const myKey = currentUser?.id;
+    const pc = createPC('callee', myKey);
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-    const offer = JSON.parse(incomingSession.offer_sdp);
+    callIdRef.current = incomingSession.id;
+
+    const offer = incomingSession.offer;
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
     remoteDescSetRef.current = true;
 
-    // Apply any early ICE candidates from caller
-    if (incomingSession.ice_candidates_caller) {
-      await applyRemoteCandidates(JSON.parse(incomingSession.ice_candidates_caller));
-    }
+    const early = incomingSession.callerCandidates || [];
+    appliedCandidatesRef.current = early.length;
+    await applyRemoteCandidates(early);
 
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
+    await waitForIce(pc);
 
-    await Promise.race([
-      new Promise(res => {
-        if (pc.iceGatheringState === 'complete') return res();
-        pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') res(); };
-      }),
-      new Promise(res => setTimeout(res, 3000)),
-    ]);
-
-    sessionIdRef.current = incomingSession.id;
-
-    await db.entities.CallSession.update(incomingSession.id, {
-      status: 'active',
-      answer_sdp: JSON.stringify(pc.localDescription),
-      ice_candidates_callee: JSON.stringify([]),
+    await convexChat.answerCall({
+      callId: incomingSession.id,
+      answer: JSON.parse(JSON.stringify(pc.localDescription)),
     });
 
-    const iceFlushTimer = startIceFlush('callee');
-    let appliedCallerCandidateCount = incomingSession.ice_candidates_caller
-      ? JSON.parse(incomingSession.ice_candidates_caller).length
-      : 0;
-
-    // Poll for new caller ICE + call end
-    pollRef.current = setInterval(async () => {
-      const updated = await db.entities.CallSession.get(incomingSession.id);
-      if (updated.status === 'ended') {
-        stopPoll(); clearInterval(iceFlushTimer);
-        setConnState('ended');
-        if (onStateChange) onStateChange('ended:ended');
-        return;
-      }
-      if (updated.ice_candidates_caller) {
-        const all = JSON.parse(updated.ice_candidates_caller);
-        const newOnes = all.slice(appliedCallerCandidateCount);
-        if (newOnes.length > 0) {
-          appliedCallerCandidateCount += newOnes.length;
-          await applyRemoteCandidates(newOnes);
-        }
-      }
-    }, 1500);
+    watchCall(incomingSession.id, 'callee');
 
     return { stream };
-  }, [cleanup, createPC, startIceFlush, stopPoll, applyRemoteCandidates, onStateChange]);
-
-  // Heartbeat — caller writes a timestamp every 8s so callee can detect disconnect
-  const startHeartbeat = useCallback((sessionId, role) => {
-    const interval = setInterval(async () => {
-      if (!sessionId) return;
-      try {
-        await db.entities.CallSession.update(sessionId, {
-          [`${role}_heartbeat`]: new Date().toISOString(),
-        });
-      } catch {}
-    }, 8000);
-    return interval;
-  }, []);
-
-  // Watch for stale heartbeat — if other side hasn't updated in 20s, end call
-  const watchHeartbeat = useCallback((sessionId, watchField, onStale) => {
-    const interval = setInterval(async () => {
-      try {
-        const s = await db.entities.CallSession.get(sessionId);
-        const ts = s[watchField];
-        if (ts && Date.now() - new Date(ts).getTime() > 20000) {
-          onStale();
-        }
-      } catch {}
-    }, 10000);
-    return interval;
-  }, []);
+  }, [cleanup, createPC, applyRemoteCandidates, watchCall]);
 
   const hangUp = useCallback(async () => {
-    if (sessionIdRef.current) {
-      await db.entities.CallSession.update(sessionIdRef.current, {
-        status: 'ended',
-        ended_at: new Date().toISOString(),
-      });
+    if (callIdRef.current) {
+      await convexChat.updateCallStatus({ callId: callIdRef.current, status: 'ended' }).catch(() => {});
     }
     cleanup();
   }, [cleanup]);
 
-  const declineCall = useCallback(async (sessionId) => {
-    if (sessionId) {
-      await db.entities.CallSession.update(sessionId, { status: 'declined' });
+  const declineCall = useCallback(async (callId) => {
+    if (callId) {
+      await convexChat.updateCallStatus({ callId, status: 'declined' }).catch(() => {});
     }
     cleanup();
   }, [cleanup]);
 
   const setMuted = useCallback((muted) => {
-    localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = !muted; });
+    localStreamRef.current?.getAudioTracks().forEach((t) => { t.enabled = !muted; });
   }, []);
 
   const setCameraOff = useCallback((off) => {
-    localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = !off; });
+    localStreamRef.current?.getVideoTracks().forEach((t) => { t.enabled = !off; });
   }, []);
 
   const getLocalStream = useCallback(() => localStreamRef.current, []);
   const getPeerConnection = useCallback(() => pcRef.current, []);
+
+  // Presence of the call doc replaces the old heartbeat columns; kept as no-ops
+  // so callers don't need to change their lifecycle handling.
+  const startHeartbeat = useCallback(() => null, []);
+  const watchHeartbeat = useCallback(() => null, []);
 
   useEffect(() => () => cleanup(), [cleanup]);
 

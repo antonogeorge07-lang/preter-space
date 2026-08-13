@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { convexChat } from '@/lib/convexChat';
 
 import { useState } from 'react';
 import { Share2, Copy, Check } from 'lucide-react';
@@ -18,18 +18,18 @@ export default function InviteButton({ currentUser }) {
       if (!code) {
         code = generateInviteCode();
         setCreatedCode(code);
-        await db.entities.Conversation.create({
-          participant_name: currentUser?.full_name || currentUser?.email || 'You',
-          participant_ids: [currentUser?.id].filter(Boolean),
-          participant_names: [currentUser?.full_name || currentUser?.email || ''].filter(Boolean),
-          preferred_language: currentUser?.default_language || 'en',
-          participant_languages: JSON.stringify({ [currentUser?.id]: currentUser?.default_language || 'en' }),
-          invite_code: code,
-          invite_open: true,
-          unread_counts: '{}',
-          is_group: false,
+        await convexChat.createConversation({
+          isGroup: false,
+          creatorId: currentUser?.id,
+          participantIds: [currentUser?.id].filter(Boolean),
+          title: currentUser?.full_name || currentUser?.email || 'You',
+          participantNames: [currentUser?.full_name || currentUser?.email || ''].filter(Boolean),
+          participantLanguages: { [currentUser?.id]: currentUser?.default_language || 'en' },
+          preferredLanguage: currentUser?.default_language || 'en',
+          inviteCode: code,
+          inviteOpen: true,
+          unreadCounts: {},
         });
-        try { await db.auth.updateMe({ invite_code: code }); } catch {}
       }
       const url = getInviteUrl(code);
       if (navigator.share) {

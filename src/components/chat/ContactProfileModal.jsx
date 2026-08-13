@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { convexChat } from '@/lib/convexChat';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,8 +11,15 @@ export default function ContactProfileModal({ userId, onClose }) {
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    db.entities.User.filter({ id: userId }, '-created_date', 1)
-      .then(results => setProfile(results[0] || null))
+    convexChat.getUserByEmail(userId)
+      .then(doc => setProfile(doc ? {
+        id: doc._id,
+        email: doc.email,
+        full_name: doc.name,
+        avatar_url: doc.avatarUrl || null,
+        default_language: doc.language || 'en',
+        created_date: new Date(doc._creationTime).toISOString(),
+      } : null))
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
   }, [userId]);

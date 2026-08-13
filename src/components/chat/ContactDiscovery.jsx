@@ -1,40 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Users, Search, MessageSquare } from 'lucide-react';
-import { searchUsers } from '@/lib/users.functions';
+import { useConvexQuery } from '@/lib/convex';
+import { convexApi } from '@/lib/convexApi';
 
 export default function ContactDiscovery({ isOpen, onClose, currentUser, onStartConversation }) {
-  const [users, setUsers] = useState([]);
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
+  const term = query.trim();
 
-  useEffect(() => {
-    if (!isOpen) { setUsers([]); return; }
-    const term = query.trim();
-    if (term.length < 2) { setUsers([]); setLoading(false); return; }
+  // Live directory search against Convex
+  const results = useConvexQuery(
+    convexApi.users.search,
+    isOpen && term.length >= 2
+      ? { term, ...(currentUser?.email ? { excludeEmail: currentUser.email } : {}) }
+      : 'skip',
+  );
+  const loading = isOpen && term.length >= 2 && results === undefined;
 
-    let cancelled = false;
-    setLoading(true);
-    const timer = setTimeout(() => {
-      searchUsers({ data: { query: term } })
-        .then(res => {
-          if (cancelled) return;
-          setUsers((res?.users || []).filter(u => u.id !== currentUser?.id));
-        })
-        .catch(() => { if (!cancelled) setUsers([]); })
-        .finally(() => { if (!cancelled) setLoading(false); });
-    }, 300);
-
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [isOpen, query, currentUser?.id]);
+  const users = useMemo(
+    () =>
+      (results || []).map((u) => ({
+        id: u.email,
+        email: u.email,
+        full_name: u.name,
+        avatar_url: u.avatarUrl || null,
+        default_language: u.language || 'en',
+        last_seen: u.lastSeen || null,
+        is_online: !!u.isOnline,
+      })),
+    [results],
+  );
 
   const filtered = users;
 
-
   const isOnline = (u) => {
-    if (!u.updated_date) return false;
-    return (Date.now() - new Date(u.updated_date).getTime()) < 300000;
+    if (u.is_online && u.last_seen) return Date.now() - u.last_seen < 300000;
+    return false;
   };
+
 
   return (
     <AnimatePresence>

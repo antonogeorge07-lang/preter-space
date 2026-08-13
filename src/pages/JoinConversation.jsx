@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
-import { getInvitePreview, joinByInviteCode } from '@/lib/invites.functions';
+import { convexChat } from '@/lib/convexChat';
+import { convexApi } from '@/lib/convexApi';
 
 
 import { useEffect, useState } from 'react';
@@ -57,8 +58,8 @@ export default function JoinConversation() {
   // Pre-fetch sender name
   useEffect(() => {
     if (!code) return;
-    getInvitePreview({ data: { code } })
-      .then(res => { if (res?.sender_name) setSenderName(res.sender_name); })
+    convexChat.getConversationByInvite(code)
+      .then(conv => { if (conv?.title) setSenderName(conv.title); })
       .catch(() => {});
   }, [code]);
 
@@ -77,18 +78,26 @@ export default function JoinConversation() {
       // Save chosen language first so the server join picks it up
       try { await db.auth.updateMe({ default_language: chosenLang }); } catch {}
 
-      const res = await joinByInviteCode({ data: { code, language: chosenLang } });
-      if (res?.error || !res?.conversation_id) { setStep('error'); return; }
+      const conv = await convexChat.getConversationByInvite(code);
+      const myKey = currentUser?.email;
+      if (!conv || !conv.inviteOpen || !myKey) { setStep('error'); return; }
 
-      if (res.already_member) {
+      if ((conv.participantIds || []).includes(myKey)) {
         setStep('already');
-        setTimeout(() => navigate(`/chat/${res.conversation_id}`), 800);
+        setTimeout(() => navigate(`/chat/${conv._id}`), 800);
         return;
       }
 
+      await convexChat.mutation(convexApi.conversations.update, {
+          conversationId: conv._id,
+          participantIds: [...(conv.participantIds || []), myKey],
+          participantNames: [...(conv.participantNames || []), currentUser?.full_name || myKey],
+        participantLanguages: { ...(conv.participantLanguages || {}), [myKey]: chosenLang },
+      });
+
       try { localStorage.setItem('vl_onboarded', '1'); } catch {}
       setStep('joined');
-      setTimeout(() => navigate(`/chat/${res.conversation_id}`), 900);
+      setTimeout(() => navigate(`/chat/${conv._id}`), 900);
 
     } catch {
       setStep('error');
