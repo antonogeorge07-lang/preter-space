@@ -150,25 +150,25 @@ export default function JoinConversation() {
   };
 
   const inputStyle = {
-    background: 'rgba(255,255,255,0.88)',
-    border: '1px solid rgba(180,165,140,0.40)',
+    background: 'var(--card-bg)',
+    border: '1px solid var(--card-border)',
   };
 
   // Transition states
   if (step === 'joining' || step === 'joined' || step === 'already' || step === 'error') {
     return (
-      <div className="h-[100dvh] w-screen flex items-center justify-center" style={{ background: '#F5F2EB' }}>
+      <div className="h-[100dvh] w-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           className="flex flex-col items-center gap-4 p-10 rounded-3xl text-center max-w-xs mx-4"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(180,165,140,0.30)' }}>
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
           <motion.div
             animate={{ rotate: step === 'joining' ? 360 : 0 }}
             transition={{ duration: 1.2, repeat: step === 'joining' ? Infinity : 0, ease: 'linear' }}
             className="w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: '#5a4f40' }}>
+            style={{ background: 'var(--primary)' }}>
             <MessageCircle className="w-7 h-7 text-white" />
           </motion.div>
-          <p className="text-base font-semibold" style={{ color: '#3a3028' }}>
+          <p className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>
             {step === 'joining' ? 'Opening your conversation...' :
              step === 'joined'  ? 'Welcome to the conversation!' :
              step === 'already' ? 'Taking you back in...' :
@@ -177,7 +177,7 @@ export default function JoinConversation() {
           {step === 'error' && (
             <button onClick={() => navigate('/')}
               className="mt-1 px-6 py-2.5 rounded-2xl text-sm font-semibold"
-              style={{ background: '#5a4f40', color: '#F5F2EB' }}>
+              style={{ background: 'var(--primary)', color: 'var(--background)' }}>
               Go to Forge
             </button>
           )}
@@ -188,12 +188,12 @@ export default function JoinConversation() {
 
   return (
     <div className="h-[100dvh] w-screen flex flex-col items-center justify-center overflow-hidden relative px-4"
-      style={{ background: '#F5F2EB' }}>
+      style={{ background: 'var(--background)' }}>
       <div className="absolute inset-0 dot-grid opacity-50 pointer-events-none" />
 
       {/* Logo */}
       <div className="absolute top-6 left-6 z-20">
-        <span className="text-base font-semibold tracking-tight" style={{ fontFamily: "'Lora', Georgia, serif", color: '#3a3028' }}>Forge</span>
+        <span className="text-base font-semibold tracking-tight" style={{ fontFamily: 'var(--font-heading-family)', color: 'var(--foreground)' }}>Forge</span>
       </div>
 
       <AnimatePresence mode="wait">
@@ -204,22 +204,22 @@ export default function JoinConversation() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
             className="relative z-10 w-full max-w-sm flex flex-col gap-5">
             <div className="text-center">
-              <h1 className="text-3xl font-semibold" style={{ fontFamily: "'Lora', Georgia, serif", color: '#3a3028' }}>
+              <h1 className="text-3xl font-semibold" style={{ fontFamily: 'var(--font-heading-family)', color: 'var(--foreground)' }}>
                 {senderName} invited you
               </h1>
-              <p className="text-sm mt-2" style={{ color: '#8a7968' }}>
+              <p className="text-sm mt-2" style={{ color: 'var(--muted)' }}>
                 Chat in any language. Forge translates in real-time.
               </p>
             </div>
 
             {/* Blurred preview */}
-            <div className="w-full rounded-2xl overflow-hidden relative border" style={{ background: 'rgba(255,255,255,0.65)', borderColor: 'rgba(180,165,140,0.35)' }}>
-              <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: '1px solid rgba(180,165,140,0.25)' }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: '#5a4f40' }}>
+            <div className="w-full rounded-2xl overflow-hidden relative border" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+              <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: '1px solid var(--card-border)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: 'var(--primary)' }}>
                   {senderName?.[0]?.toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-xs font-semibold" style={{ color: '#3a3028' }}>{senderName}</div>
+                  <div className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>{senderName}</div>
                   <div className="text-[10px] text-emerald-600 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Translating in real-time
                   </div>
@@ -230,27 +230,27 @@ export default function JoinConversation() {
                   <div key={msg.id} className={`flex ${msg.from === 'me' ? 'justify-end' : 'justify-start'}`}>
                     <div className="px-4 py-2 rounded-2xl text-xs max-w-[75%]"
                       style={msg.from === 'me'
-                        ? { background: '#5a4f40', color: '#F5F2EB' }
-                        : { background: 'rgba(255,255,255,0.9)', color: '#3a3028', border: '1px solid rgba(180,165,140,0.25)' }}>
+                        ? { background: 'var(--primary)', color: 'var(--background)' }
+                        : { background: 'var(--card-bg)', color: 'var(--foreground)', border: '1px solid var(--card-border)' }}>
                       {msg.content}
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(245,242,235,0.30)' }}>
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-2" style={{ background: 'rgba(255,255,255,0.9)' }}>
-                  <Lock className="w-5 h-5" style={{ color: '#5a4f40' }} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'var(--glass-bg-subtle)' }}>
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-2" style={{ background: 'var(--card-bg)' }}>
+                  <Lock className="w-5 h-5" style={{ color: 'var(--primary)' }} />
                 </div>
-                <p className="text-xs" style={{ color: '#8a7968' }}>Sign in to unlock this conversation</p>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Sign in to unlock this conversation</p>
               </div>
             </div>
 
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => setStep('auth')}
               className="w-full py-4 rounded-2xl text-sm font-semibold"
-              style={{ background: '#5a4f40', color: '#F5F2EB' }}>
+              style={{ background: 'var(--primary)', color: 'var(--background)' }}>
               Join conversation →
             </motion.button>
-            <div className="flex items-center justify-center gap-1.5 text-[11px]" style={{ color: '#b0a090' }}>
+            <div className="flex items-center justify-center gap-1.5 text-[11px]" style={{ color: 'var(--muted)' }}>
               <Shield className="w-3 h-3" /> Zero-knowledge. We never read your messages.
             </div>
           </motion.div>
@@ -262,10 +262,10 @@ export default function JoinConversation() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
             className="relative z-10 w-full max-w-sm flex flex-col gap-5">
             <div className="text-center">
-              <h2 className="text-2xl font-semibold" style={{ fontFamily: "'Lora', Georgia, serif", color: '#3a3028' }}>
+              <h2 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-heading-family)', color: 'var(--foreground)' }}>
                 {authMode === 'signin' ? 'Welcome back.' : 'Create your account.'}
               </h2>
-              <p className="text-sm mt-1" style={{ color: '#8a7968' }}>
+              <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
                 {authMode === 'signin' ? 'Sign in to join the conversation.' : 'A quick setup and you\'re in.'}
               </p>
             </div>
@@ -274,16 +274,16 @@ export default function JoinConversation() {
               <div className="rounded-2xl overflow-hidden border" style={inputStyle}>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="Email address" autoFocus autoComplete="email"
-                  className="w-full px-5 py-4 bg-transparent text-base focus:outline-none" style={{ color: '#3a3028' }} />
+                  className="w-full px-5 py-4 bg-transparent text-base focus:outline-none" style={{ color: 'var(--foreground)' }} />
               </div>
 
               {authMode === 'signin' && (
                 <div className="rounded-2xl overflow-hidden border relative" style={inputStyle}>
                   <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
                     placeholder="Password" autoComplete="current-password"
-                    className="w-full px-5 py-4 pr-12 bg-transparent text-base focus:outline-none" style={{ color: '#3a3028' }} />
+                    className="w-full px-5 py-4 pr-12 bg-transparent text-base focus:outline-none" style={{ color: 'var(--foreground)' }} />
                   <button type="button" onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: '#a09078' }}>
+                    className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted)' }}>
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -294,15 +294,15 @@ export default function JoinConversation() {
               <motion.button type="submit" disabled={loading || !email.trim() || (authMode === 'signin' && !password)}
                 whileTap={{ scale: 0.97 }}
                 className="w-full py-4 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
-                style={{ background: '#5a4f40', color: '#F5F2EB' }}>
+                style={{ background: 'var(--primary)', color: 'var(--background)' }}>
                 {loading ? (authMode === 'signin' ? 'Signing in...' : 'Sending code...') : (authMode === 'signin' ? 'Sign in →' : 'Create account →')}
               </motion.button>
             </form>
 
-            <p className="text-center text-[13px]" style={{ color: '#a09078' }}>
+            <p className="text-center text-[13px]" style={{ color: 'var(--muted)' }}>
               {authMode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
               <button onClick={() => { setAuthMode(authMode === 'signin' ? 'register' : 'signin'); setError(''); }}
-                className="font-semibold underline underline-offset-2" style={{ color: '#5a4f40' }}>
+                className="font-semibold underline underline-offset-2" style={{ color: 'var(--primary)' }}>
                 {authMode === 'signin' ? 'Create one' : 'Sign in'}
               </button>
             </p>
@@ -315,12 +315,12 @@ export default function JoinConversation() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
             className="relative z-10 w-full max-w-sm flex flex-col gap-5">
             <div className="text-center">
-              <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(90,79,64,0.10)' }}>
+              <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: 'color-mix(in oklab, var(--primary) 12%, transparent)' }}>
                 <span className="text-2xl">✉️</span>
               </div>
-              <h2 className="text-2xl font-semibold" style={{ fontFamily: "'Lora', Georgia, serif", color: '#3a3028' }}>Check your inbox</h2>
-              <p className="text-sm mt-1" style={{ color: '#8a7968' }}>
-                We sent a code to <span className="font-medium" style={{ color: '#5a4f40' }}>{email}</span>
+              <h2 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-heading-family)', color: 'var(--foreground)' }}>Check your inbox</h2>
+              <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
+                We sent a code to <span className="font-medium" style={{ color: 'var(--primary)' }}>{email}</span>
               </p>
             </div>
             <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
@@ -329,17 +329,17 @@ export default function JoinConversation() {
                   onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
                   placeholder="Enter code" autoFocus autoComplete="one-time-code" maxLength={6}
                   className="w-full px-5 py-4 bg-transparent text-xl font-mono tracking-widest text-center focus:outline-none"
-                  style={{ color: '#3a3028' }} />
+                  style={{ color: 'var(--foreground)' }} />
               </div>
               {error && <p className="text-xs text-red-500 text-center">{error}</p>}
               <motion.button type="submit" disabled={loading || otp.length < 4} whileTap={{ scale: 0.97 }}
                 className="w-full py-4 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
-                style={{ background: '#5a4f40', color: '#F5F2EB' }}>
+                style={{ background: 'var(--primary)', color: 'var(--background)' }}>
                 {loading ? 'Verifying...' : 'Verify →'}
               </motion.button>
             </form>
             <button onClick={() => { setStep('auth'); setOtp(''); setError(''); }}
-              className="text-xs text-center" style={{ color: '#a09078' }}>
+              className="text-xs text-center" style={{ color: 'var(--muted)' }}>
               Use a different email
             </button>
           </motion.div>
@@ -351,13 +351,13 @@ export default function JoinConversation() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
             className="relative z-10 w-full max-w-sm flex flex-col gap-5">
             <div className="text-center">
-              <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(90,79,64,0.10)' }}>
-                <Globe className="w-7 h-7" style={{ color: '#5a4f40' }} />
+              <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: 'color-mix(in oklab, var(--primary) 12%, transparent)' }}>
+                <Globe className="w-7 h-7" style={{ color: 'var(--primary)' }} />
               </div>
-              <h2 className="text-2xl font-semibold" style={{ fontFamily: "'Lora', Georgia, serif", color: '#3a3028' }}>
+              <h2 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-heading-family)', color: 'var(--foreground)' }}>
                 What language do you think in?
               </h2>
-              <p className="text-sm mt-1" style={{ color: '#8a7968' }}>
+              <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
                 Forge will translate {senderName}'s messages into this language for you.
               </p>
             </div>
@@ -366,8 +366,8 @@ export default function JoinConversation() {
                 <motion.button key={l.code} whileTap={{ scale: 0.95 }} onClick={() => setLang(l)}
                   className="py-3 px-2 rounded-2xl text-center transition-all border"
                   style={lang.code === l.code
-                    ? { background: 'rgba(90,79,64,0.12)', border: '1.5px solid rgba(90,79,64,0.35)', color: '#3a3028' }
-                    : { background: 'rgba(255,255,255,0.60)', border: '1px solid rgba(180,165,140,0.35)', color: '#6a5f50' }}>
+                    ? { background: 'color-mix(in oklab, var(--primary) 12%, transparent)', border: '1.5px solid color-mix(in oklab, var(--primary) 35%, transparent)', color: 'var(--foreground)' }
+                    : { background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
                   <div className="text-xs font-semibold truncate">{l.native}</div>
                   <div className="text-[10px] opacity-60 truncate">{l.label}</div>
                 </motion.button>
@@ -376,7 +376,7 @@ export default function JoinConversation() {
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => joinConversation(lang.code)}
               disabled={loading}
               className="w-full py-4 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
-              style={{ background: '#5a4f40', color: '#F5F2EB' }}>
+              style={{ background: 'var(--primary)', color: 'var(--background)' }}>
               {loading ? 'Joining...' : `Join in ${lang.native} →`}
             </motion.button>
           </motion.div>

@@ -20,14 +20,14 @@ export default function VideoMessageBubble({ message, preferredLang }) {
           style={{ background: 'var(--bubble-incoming)', border: '1px solid var(--card-border)' }}>
           {/* Video Player */}
           <div
-            className="relative aspect-video bg-gradient-to-br from-indigo-400 to-indigo-300 flex items-center justify-center cursor-pointer"
+            className="relative aspect-video bg-gradient-to-br from-primary/70 to-primary/40 flex items-center justify-center cursor-pointer"
             onClick={() => setIsPlaying(!isPlaying)}
           >
             <motion.div
               whileTap={{ scale: 0.95 }}
               className="w-16 h-16 bg-white/90 backdrop-blur-2xl rounded-2xl flex items-center justify-center shadow-xl"
             >
-              <Play className="w-8 h-8 text-indigo-700 ml-0.5" />
+              <Play className="w-8 h-8 text-primary ml-0.5" />
             </motion.div>
 
             {/* Auto Captions Overlay */}
@@ -38,7 +38,7 @@ export default function VideoMessageBubble({ message, preferredLang }) {
             )}
 
             {hasTranslation && (
-              <div className="absolute top-4 right-4 px-3 py-1 bg-white/80 backdrop-blur-md text-indigo-700 text-xs rounded-2xl flex items-center gap-1">
+              <div className="absolute top-4 right-4 px-3 py-1 bg-white/80 backdrop-blur-md text-primary text-xs rounded-2xl flex items-center gap-1">
                 <Globe className="w-3 h-3" /> Translated
               </div>
             )}
