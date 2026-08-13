@@ -344,7 +344,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      shares_conversation: { Args: { _other: string }; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
