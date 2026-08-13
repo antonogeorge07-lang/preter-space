@@ -20,7 +20,7 @@ export default function VideoMessageBubble({ message, preferredLang }) {
           style={{ background: 'var(--bubble-incoming)', border: '1px solid var(--card-border)' }}>
           {/* Video Player */}
           <div
-            className="relative aspect-video bg-gradient-to-br from-indigo-400 to-indigo-300 flex items-center justify-center cursor-pointer"
+            className="relative aspect-video bg-gradient-to-br from-primary/70 to-primary/40 flex items-center justify-center cursor-pointer"
             onClick={() => setIsPlaying(!isPlaying)}
           >
             <motion.div
