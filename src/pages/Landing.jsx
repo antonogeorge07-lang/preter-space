@@ -308,7 +308,7 @@ export default function Landing() {
                 <h1 className="text-4xl sm:text-5xl xl:text-6xl font-semibold leading-[1.1] mb-5 font-heading"
                   style={{ color: 'var(--foreground)' }}>
                   Preter.<br />Chat in any<br />language.<br />
-                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Instantly translated.</span>
+                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>AI translated.</span>
                 </h1>
                 <p className="text-sm leading-relaxed mb-6 max-w-sm" style={{ color: 'var(--muted)' }}>
                   You write in Spanish. They read in Japanese. No copy-paste, no switching apps.
