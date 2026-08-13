@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { convexChat } from '@/lib/convexChat';
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
@@ -17,12 +18,25 @@ export const AuthProvider = ({ children }) => {
         setUser(u);
         setIsAuthenticated(true);
         setIsLoadingAuth(false);
+        // Mirror the account into the Convex directory so this person is
+        // discoverable in search even before they open a conversation.
+        if (u?.email) {
+          convexChat
+            .upsertUser({
+              name: u.full_name || u.email,
+              email: u.email,
+              language: u.default_language || 'en',
+              ...(u.avatar_url ? { avatarUrl: u.avatar_url } : {}),
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {
         setIsAuthenticated(false);
         setIsLoadingAuth(false);
       });
   }, []);
+
 
   const logout = () => db.auth.logout('/landing');
 
