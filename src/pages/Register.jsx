@@ -1,13 +1,12 @@
 import { db } from '@/lib/db';
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "@/lib/router-compat";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
@@ -19,7 +18,6 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,32 +37,16 @@ export default function Register() {
     }
   };
 
-  const handleVerify = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const result = await db.auth.verifyOtp({ email, otpCode });
-      if (result?.access_token) {
-        db.auth.setToken(result.access_token);
-      }
-      window.location.href = "/";
-    } catch (err) {
-      setError(err.message || "Invalid verification code");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleResend = async () => {
     setError("");
     try {
       await db.auth.resendOtp(email);
       toast({
-        title: "Code sent",
-        description: "Check your email for the new code.",
+        title: "Email sent",
+        description: "Check your inbox for the confirmation link.",
       });
     } catch (err) {
-      setError(err.message || "Failed to resend code");
+      setError(err.message || "Failed to resend email");
     }
   };
 
@@ -72,59 +54,56 @@ export default function Register() {
     db.auth.loginWithProvider("google", "/");
   };
 
+  // The confirmation email contains a link, not a numeric code.
+  // Poll for the session so the tab moves on once the link is opened.
+  useEffect(() => {
+    if (!showOtp) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        if (await db.auth.isAuthenticated() && !cancelled) {
+          window.location.href = "/";
+        }
+      } catch {}
+    };
+    const id = setInterval(tick, 2500);
+    tick();
+    return () => { cancelled = true; clearInterval(id); };
+  }, [showOtp]);
+
   if (showOtp) {
     return (
       <AuthLayout
         icon={Mail}
-        title="Verify your email"
-        subtitle={`We sent a code to ${email}`}
+        title="Confirm your email"
+        subtitle={`We sent a confirmation link to ${email}`}
       >
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
             {error}
           </div>
         )}
-        <div className="flex justify-center mb-6">
-          <InputOTP
-            maxLength={6}
-            value={otpCode}
-            onChange={setOtpCode}
-            autoFocus
-            autoComplete="one-time-code"
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
+        <p className="text-sm text-muted-foreground text-center mb-6">
+          Open the email and tap <span className="font-medium text-foreground">Verify Email</span>.
+          This page continues automatically once you do.
+        </p>
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Waiting for confirmation…
         </div>
-        <Button
-          className="w-full h-12 font-medium"
-          onClick={handleVerify}
-          disabled={loading || otpCode.length < 6}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Verifying...
-            </>
-          ) : (
-            "Verify"
-          )}
+        <Button variant="outline" className="w-full h-12 font-medium" onClick={handleResend}>
+          Resend email
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Didn't receive the code?{" "}
-          <button onClick={handleResend} className="text-primary font-medium hover:underline">
-            Resend
+          Wrong address?{" "}
+          <button onClick={() => setShowOtp(false)} className="text-primary font-medium hover:underline">
+            Change it
           </button>
         </p>
       </AuthLayout>
     );
   }
+
 
   return (
     <AuthLayout

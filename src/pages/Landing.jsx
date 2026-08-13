@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, Shield, Sparkles, Eye, EyeOff, Share2, MessageSquare,
@@ -250,18 +250,34 @@ export default function Landing() {
     } finally { setLoading(false); }
   };
 
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    if (!otp.trim()) return;
-    setLoading(true); setError('');
+  // The confirmation email contains a verification link (not a numeric code).
+  // Once the user taps it, a session appears — pick it up and continue onboarding.
+  useEffect(() => {
+    if (!(mode === 'register' && step === 'otp')) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        if (await db.auth.isAuthenticated()) {
+          if (!cancelled) setStep('language');
+        }
+      } catch {}
+    };
+    const id = setInterval(tick, 2500);
+    tick();
+    return () => { cancelled = true; clearInterval(id); };
+  }, [mode, step]);
+
+  const handleResendLink = async () => {
+    setError('');
+    setLoading(true);
     try {
-      const result = await db.auth.verifyOtp({ email: contact.trim(), otpCode: otp.trim() });
-      await db.auth.setToken(result.access_token);
-      setStep('language');
+      await db.auth.resendOtp(contact.trim());
+      setError('');
     } catch {
-      setError('Invalid code. Check and try again.');
+      setError('Could not resend the email. Please try again.');
     } finally { setLoading(false); }
   };
+
 
   const handleLanguageDone = async () => {
     setLoading(true);
@@ -449,31 +465,28 @@ export default function Landing() {
                 </motion.div>
               )}
 
-              {/* OTP */}
+              {/* EMAIL CONFIRMATION */}
               {mode === 'register' && step === 'otp' && (
                 <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
                   <AuthCard>
                     <div className="flex flex-col items-center text-center mb-6">
                       <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 text-2xl" style={{ background: 'var(--accent-pink)' }}>✉️</div>
-                      <h2 className="text-xl font-semibold mb-1 font-heading" style={{ color: 'var(--foreground)' }}>Check your inbox</h2>
+                      <h2 className="text-xl font-semibold mb-1 font-heading" style={{ color: 'var(--foreground)' }}>Confirm your email</h2>
                       <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                        We sent a 6-digit code to <span className="font-medium" style={{ color: 'var(--primary)' }}>{contact}</span>
+                        We sent a confirmation link to <span className="font-medium" style={{ color: 'var(--primary)' }}>{contact}</span>.
+                        Open the email and tap <span className="font-medium" style={{ color: 'var(--foreground)' }}>Verify Email</span> to continue.
                       </p>
                     </div>
-                    <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
-                      <div className="rounded-2xl overflow-hidden border" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
-                        <input type="text" inputMode="numeric" value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                          placeholder="Enter code" autoFocus autoComplete="one-time-code" maxLength={6}
-                          className="w-full px-5 py-4 bg-transparent text-xl font-mono tracking-widest text-center focus:outline-none" style={{ color: 'var(--foreground)' }} />
-                      </div>
-                      {error && <p className="text-xs text-red-500 text-center">{error}</p>}
-                      <motion.button type="submit" disabled={loading || otp.length < 4} whileTap={{ scale: 0.97 }}
-                        className="w-full py-3.5 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
-                        style={{ background: 'var(--primary)', color: 'var(--paper)' }}>
-                        {loading ? 'Verifying...' : 'Verify →'}
-                      </motion.button>
-                    </form>
+                    <div className="flex items-center justify-center gap-2 text-xs mb-4" style={{ color: 'var(--muted)' }}>
+                      <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--primary)' }} />
+                      Waiting for confirmation…
+                    </div>
+                    {error && <p className="text-xs text-red-500 text-center mb-3">{error}</p>}
+                    <motion.button type="button" onClick={handleResendLink} disabled={loading} whileTap={{ scale: 0.97 }}
+                      className="w-full py-3.5 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
+                      style={{ background: 'var(--primary)', color: 'var(--paper)' }}>
+                      {loading ? 'Sending…' : 'Resend email'}
+                    </motion.button>
                     <button onClick={() => { setStep('entry'); setOtp(''); setError(''); }}
                       className="w-full text-xs text-center mt-4" style={{ color: 'var(--muted)' }}>
                       Use a different address
@@ -481,6 +494,7 @@ export default function Landing() {
                   </AuthCard>
                 </motion.div>
               )}
+
 
               {/* LANGUAGE */}
               {mode === 'register' && step === 'language' && (
