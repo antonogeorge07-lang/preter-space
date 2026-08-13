@@ -11,6 +11,7 @@ import {
   useChatPresence,
   useReadReceipts,
   useChatMutations,
+  useParticipantLanguages,
 } from '@/hooks/useConvexChat';
 import { safeJson } from '@/lib/chatMap';
 import { convexChat } from '@/lib/convexChat';
@@ -79,6 +80,9 @@ export default function Forge() {
   const { messages, messageDocs, hasMore: hasMoreMessages, loadingOlder, loadOlder } =
     useChatMessages(chatId, { blockedUserIds });
   useReadReceipts({ conversationId: chatId, key: myKey, messageDocs });
+
+  // ── Live language preferences of everyone in this conversation ───────────
+  const participantLanguages = useParticipantLanguages(activeConversation?.participant_ids || []);
 
   // ── Live presence + typing ───────────────────────────────────────────────
   const otherKey = (activeConversation?.participant_ids || []).find((id) => id !== myKey) || null;
