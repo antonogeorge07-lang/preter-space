@@ -13,12 +13,18 @@ export const listForMessage = query({
 
 /** All reactions for every message in a conversation — one subscription per chat. */
 export const listForConversation = query({
-  args: { conversationId: v.id("conversations") },
+  args: {
+    conversationId: v.id("conversations"),
+    limit: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
-    const messages = await ctx.db
+    const messagesQuery = ctx.db
       .query("messages")
-      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
-      .collect();
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId));
+    // Only the messages currently on screen need their reactions loaded.
+    const messages = args.limit
+      ? await messagesQuery.order("desc").take(Math.min(Math.max(args.limit, 1), 500))
+      : await messagesQuery.collect();
 
     const out = [];
     for (const m of messages) {

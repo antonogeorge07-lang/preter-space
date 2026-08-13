@@ -39,6 +39,10 @@ export const convexApi = {
   },
   messages: {
     list: fn.query<{ conversationId: string }, ConvexMessage[]>("messages:list"),
+    listPage: fn.query<
+      { conversationId: string; limit?: number },
+      { messages: ConvexMessage[]; hasMore: boolean }
+    >("messages:listPage"),
     send: fn.mutation<
       {
         conversationId: string;
@@ -76,7 +80,7 @@ export const convexApi = {
   },
   reactions: {
     listForMessage: fn.query<{ messageId: string }, ConvexReaction[]>("reactions:listForMessage"),
-    listForConversation: fn.query<{ conversationId: string }, ConvexReaction[]>(
+    listForConversation: fn.query<{ conversationId: string; limit?: number }, ConvexReaction[]>(
       "reactions:listForConversation",
     ),
     toggle: fn.mutation<{ messageId: string; userId: string; emoji: string }, boolean>(
