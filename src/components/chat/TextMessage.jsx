@@ -178,7 +178,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
                 <motion.p key={displayText}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   transition={{ duration: 0.14 }}
-                  className="text-[15px] leading-relaxed break-words"
+                  className="text-[15px] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]"
                   style={{ color: 'var(--foreground)', fontFamily: 'var(--font-body)' }}>
                   {displayText}
                   {message.edited && <span className="text-[10px] ml-1.5 opacity-40">(edited)</span>}
