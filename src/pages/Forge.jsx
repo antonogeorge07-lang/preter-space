@@ -155,17 +155,30 @@ export default function Forge() {
     [messages, myKey],
   );
 
+  // ── Language handshake ───────────────────────────────────────────────────
+  // If a contact has no language on their account yet, infer it from the
+  // language actually detected on their most recent message in this thread.
+  const inferredLanguages = useMemo(() => {
+    const out = {};
+    for (const msg of messages) {
+      if (!msg.sender_id || msg.sender_id === myKey || msg.is_guide) continue;
+      if (msg.original_language) out[msg.sender_id] = msg.original_language;
+    }
+    return out;
+  }, [messages, myKey]);
+
   // Each participant's own account language is the source of truth for
-  // "which language do I read in"; the conversation row is only a fallback.
+  // "which language do I read in"; then the language detected from what they
+  // wrote; the conversation row is only the last fallback.
   const getParticipantLang = useCallback(
     (conv, userId) => {
       if (!userId) return conv?.preferred_language || 'en';
       if (userId === myKey && myLanguage) return myLanguage;
       if (participantLanguages[userId]) return participantLanguages[userId];
       const langs = safeJson(conv?.participant_languages, {});
-      return langs[userId] || conv?.preferred_language || 'en';
+      return langs[userId] || inferredLanguages[userId] || conv?.preferred_language || 'en';
     },
-    [myKey, myLanguage, participantLanguages],
+    [myKey, myLanguage, participantLanguages, inferredLanguages],
   );
 
   // Get current user's preferred language for this conversation
@@ -173,6 +186,34 @@ export default function Forge() {
     (conv) => getParticipantLang(conv, myKey),
     [getParticipantLang, myKey],
   );
+
+  // Persist the handshake on the conversation so both sides (and any device)
+  // agree on which language each participant reads in.
+  useEffect(() => {
+    if (!chatId || !myKey || !activeConversation) return;
+    const stored = safeJson(activeConversation.participant_languages, {});
+    const next = { ...stored };
+    let changed = false;
+    for (const pid of activeConversation.participant_ids || []) {
+      const resolved =
+        pid === myKey
+          ? myLanguage || stored[pid]
+          : participantLanguages[pid] || stored[pid] || inferredLanguages[pid];
+      if (resolved && stored[pid] !== resolved) {
+        next[pid] = resolved;
+        changed = true;
+      }
+    }
+    if (changed) updateConversation(chatId, { participant_languages: next }).catch(() => {});
+  }, [
+    chatId,
+    myKey,
+    myLanguage,
+    activeConversation?.participant_languages,
+    activeConversation?.participant_ids,
+    participantLanguages,
+    inferredLanguages,
+  ]);
 
   // Clear my unread counter when opening a conversation
   useEffect(() => {
