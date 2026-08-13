@@ -55,10 +55,11 @@ export default function JoinConversation() {
   // Pre-fetch sender name
   useEffect(() => {
     if (!code) return;
-    db.entities.Conversation.filter({ invite_code: code })
-      .then(results => { if (results?.[0]?.participant_name) setSenderName(results[0].participant_name); })
+    getInvitePreview({ data: { code } })
+      .then(res => { if (res?.sender_name) setSenderName(res.sender_name); })
       .catch(() => {});
   }, [code]);
+
 
   // If already logged in, skip auth and go straight to language selection
   useEffect(() => {
