@@ -1,0 +1,24 @@
+{
+  "name": "Preter - Multilingual Messenger",
+  "short_name": "Preter",
+  "description": "Chat in any language, instantly translated.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9FAFB",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=preter&backgroundColor=4F46E5,C7D2FE&size=192",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=preter&backgroundColor=4F46E5,C7D2FE&size=512",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

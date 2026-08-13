@@ -1,24 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AuthGate from "@/components/AuthGate";
+import Forge from "@/pages/Forge";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Preter — Chat across every language" },
+      {
+        name: "description",
+        content:
+          "Preter translates your conversations in real time, so you can chat, call, and share with anyone in their own language.",
+      },
+      { property: "og:title", content: "Preter — Chat across every language" },
+      {
+        property: "og:description",
+        content: "Real-time translated messaging, voice notes, and calls.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: () => (
+    <AuthGate>
+      <Forge />
+    </AuthGate>
+  ),
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
