@@ -27,10 +27,14 @@ export function getConvexClient(): ConvexReactClient | null {
  * object) lives in this repo.
  */
 export const fn = {
-  query: <Args, Return>(name: string) => makeFunctionReference<"query", Args, Return>(name),
-  mutation: <Args, Return>(name: string) => makeFunctionReference<"mutation", Args, Return>(name),
-  action: <Args, Return>(name: string) => makeFunctionReference<"action", Args, Return>(name),
+  query: <Args extends Record<string, unknown>, Return>(name: string) =>
+    makeFunctionReference<"query", Args, Return>(name),
+  mutation: <Args extends Record<string, unknown>, Return>(name: string) =>
+    makeFunctionReference<"mutation", Args, Return>(name),
+  action: <Args extends Record<string, unknown>, Return>(name: string) =>
+    makeFunctionReference<"action", Args, Return>(name),
 };
+
 
 export { useConvexQuery, useConvexMutation, useConvexAction };
 
