@@ -82,11 +82,15 @@ export default function ContactDiscovery({ isOpen, onClose, currentUser, onStart
             {/* List */}
             <div className="overflow-y-auto" style={{ maxHeight: '55vh' }}>
               {loading && (
-                <p className="text-center py-8 text-sm" style={{ color: 'var(--muted)' }}>Loading...</p>
+                <p className="text-center py-8 text-sm" style={{ color: 'var(--muted)' }}>Searching...</p>
               )}
-              {!loading && filtered.length === 0 && (
-                <p className="text-center py-8 text-sm" style={{ color: 'var(--muted)' }}>No registered Preter users found</p>
+              {!loading && query.trim().length < 2 && (
+                <p className="text-center py-8 text-sm" style={{ color: 'var(--muted)' }}>Type at least 2 letters to find people</p>
               )}
+              {!loading && query.trim().length >= 2 && filtered.length === 0 && (
+                <p className="text-center py-8 text-sm" style={{ color: 'var(--muted)' }}>No Preter users match that name</p>
+              )}
+
               {filtered.map(u => (
                 <div key={u.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/5">
                   <div className="relative flex-shrink-0">
