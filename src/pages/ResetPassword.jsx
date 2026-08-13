@@ -1,7 +1,8 @@
 import { db } from '@/lib/db';
+import { supabase } from '@/integrations/supabase/client';
 
-import React, { useState } from "react";
-import { Link, useSearchParams } from "@/lib/router-compat";
+import React, { useState, useEffect } from "react";
+import { Link } from "@/lib/router-compat";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,13 +11,56 @@ import { Lock, Loader2, AlertTriangle } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
-  const resetToken = searchParams.get("token");
-
+  // "checking" | "ready" | "invalid"
+  const [status, setStatus] = useState("checking");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const establish = async () => {
+      try {
+        const url = new URL(window.location.href);
+        const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+        const code = url.searchParams.get("code");
+        const tokenHash = url.searchParams.get("token_hash") || url.searchParams.get("token");
+        const type = url.searchParams.get("type") || hash.get("type");
+
+        // Already signed in via the recovery link (implicit flow handled by the client).
+        let { data } = await supabase.auth.getSession();
+        if (!data?.session && code) {
+          const res = await supabase.auth.exchangeCodeForSession(code);
+          if (!res.error) data = res.data;
+        }
+        if (!data?.session && tokenHash) {
+          const res = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type === "invite" ? "invite" : "recovery",
+          });
+          if (!res.error) data = res.data;
+        }
+        if (!data?.session) {
+          // Give the client a moment to parse the URL fragment itself.
+          await new Promise((r) => setTimeout(r, 800));
+          const retry = await supabase.auth.getSession();
+          data = retry.data;
+        }
+
+        if (cancelled) return;
+        setStatus(data?.session ? "ready" : "invalid");
+      } catch {
+        if (!cancelled) setStatus("invalid");
+      }
+    };
+
+    establish();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +71,7 @@ export default function ResetPassword() {
     }
     setLoading(true);
     try {
-      await db.auth.resetPassword({ resetToken, newPassword });
+      await db.auth.resetPassword({ newPassword });
       window.location.href = "/login";
     } catch (err) {
       setError(err.message || "Failed to reset password");
@@ -36,12 +80,22 @@ export default function ResetPassword() {
     }
   };
 
-  if (!resetToken) {
+  if (status === "checking") {
+    return (
+      <AuthLayout icon={Lock} title="New password" subtitle="Verifying your reset link">
+        <div className="flex justify-center py-6">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  if (status === "invalid") {
     return (
       <AuthLayout
         icon={AlertTriangle}
         title="Invalid reset link"
-        subtitle="This password reset link is missing or invalid"
+        subtitle="This password reset link is missing, expired or already used"
         footer={
           <Link to="/forgot-password" className="text-primary font-medium hover:underline">
             Request a new link
@@ -49,7 +103,8 @@ export default function ResetPassword() {
         }
       >
         <p className="text-sm text-foreground text-center">
-          The link you used appears to be incomplete. Please request a new password reset email.
+          Reset links can only be used once and expire after a short while. Please request a new
+          password reset email.
         </p>
       </AuthLayout>
     );
