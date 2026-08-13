@@ -64,7 +64,7 @@ export function useGeoLanguage() {
           setSuggestedLang({ code: langCode, name: LANG_MAP[langCode], country: data?.country_name });
         }
       } catch {
-        // silently fail — suggestion is optional
+        // silently fail - suggestion is optional
       } finally {
         if (!cancelled) setLoading(false);
       }

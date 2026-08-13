@@ -120,7 +120,7 @@ export default function JoinConversation() {
     }
   };
 
-  // Register new user — send OTP
+  // Register new user - send OTP
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true); setError('');

@@ -5,13 +5,13 @@ import Landing from "@/pages/Landing";
 export const Route = createFileRoute("/landing")({
   head: () => ({
     meta: [
-      { title: "Preter — Talk to anyone, in any language" },
+      { title: "Preter: Talk to anyone, in any language" },
       {
         name: "description",
         content:
           "Preter is a multilingual messenger: send a message in your language, your friend reads it in theirs. Voice notes, calls, and files included.",
       },
-      { property: "og:title", content: "Preter — Talk to anyone, in any language" },
+      { property: "og:title", content: "Preter: Talk to anyone, in any language" },
       {
         property: "og:description",
         content: "Multilingual chat with real-time translation, voice notes, and calls.",

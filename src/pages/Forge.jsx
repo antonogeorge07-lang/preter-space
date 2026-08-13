@@ -284,7 +284,7 @@ export default function Forge() {
       }
 
       // Translate BEFORE inserting so the stored message already carries the
-      // recipients' languages — no untranslated flash on their side.
+      // recipients' languages - no untranslated flash on their side.
       const translations = {};
       let originalLang = '';
       try {
@@ -296,7 +296,7 @@ export default function Forge() {
           if (!originalLang && detectedLang) originalLang = detectedLang;
         });
       } catch {
-        // Translation unavailable — send the original text through anyway.
+        // Translation unavailable - send the original text through anyway.
       }
 
       const primaryTranslation = translations[recipientLang] || text;
@@ -677,7 +677,7 @@ export default function Forge() {
               reporterId: myKey,
               targetId: target || myKey,
               ...(conv?.id ? { conversationId: conv.id } : {}),
-              reason: [reason, details].filter(Boolean).join(' — '),
+              reason: [reason, details].filter(Boolean).join(' - '),
             })
             .catch(() => {});
         }}

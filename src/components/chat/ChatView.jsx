@@ -64,7 +64,7 @@ export default function ChatView({
         conversationId: conversation.id,
         reason: 'Reported from conversation menu',
       });
-      toast({ title: 'Report submitted', description: 'Thanks — our team will review this conversation.' });
+      toast({ title: 'Report submitted', description: 'Thanks - our team will review this conversation.' });
     } catch {
       toast({ title: 'Could not submit report', description: 'Please try again in a moment.', variant: 'destructive' });
     } finally {

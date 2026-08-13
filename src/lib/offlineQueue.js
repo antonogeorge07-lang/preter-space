@@ -1,4 +1,4 @@
-// Offline message queue — persisted to localStorage
+// Offline message queue - persisted to localStorage
 const QUEUE_KEY = 'vivaloca_offline_queue';
 
 export function enqueue(item) {

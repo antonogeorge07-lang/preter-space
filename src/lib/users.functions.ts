@@ -7,7 +7,7 @@ const searchSchema = z.object({ query: z.string().trim().min(2).max(64) });
 /**
  * Authenticated directory search. Profiles are not readable client-side (RLS limits
  * SELECT to yourself and people you already share a conversation with), so discovery
- * runs server-side and returns only non-sensitive display fields — never emails.
+ * runs server-side and returns only non-sensitive display fields - never emails.
  */
 export const searchUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

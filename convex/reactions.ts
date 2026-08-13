@@ -11,7 +11,7 @@ export const listForMessage = query({
   },
 });
 
-/** All reactions for every message in a conversation — one subscription per chat. */
+/** All reactions for every message in a conversation - one subscription per chat. */
 export const listForConversation = query({
   args: {
     conversationId: v.id("conversations"),

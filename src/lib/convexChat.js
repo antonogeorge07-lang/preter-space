@@ -24,7 +24,7 @@ export const convexChat = {
       try {
         onResult(watcher.localQueryResult());
       } catch {
-        /* query errored — ignore this tick */
+        /* query errored - ignore this tick */
       }
     });
     return unsubscribe;

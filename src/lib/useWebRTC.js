@@ -1,5 +1,5 @@
 /**
- * useWebRTC — WebRTC hook that uses Convex `calls` documents for signaling.
+ * useWebRTC - WebRTC hook that uses Convex `calls` documents for signaling.
  * Offer/answer and trickle ICE flow through Convex mutations, and the remote
  * side is watched through a live Convex query subscription (no polling).
  */
@@ -77,7 +77,7 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
       if (onStateChange) onStateChange(mapped);
     };
 
-    // Trickle ICE — push each candidate straight into Convex
+    // Trickle ICE - push each candidate straight into Convex
     pc.onicecandidate = (e) => {
       if (!e.candidate || !callIdRef.current) return;
       convexChat
