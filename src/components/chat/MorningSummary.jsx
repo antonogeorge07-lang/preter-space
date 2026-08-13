@@ -204,7 +204,7 @@ export default function MorningSummary({ conversations, currentUser, onSelectCon
             transition={{ delay: 0.2, duration: 0.4 }}
             style={{ marginTop: 48 }}
           >
-            <span style={T.sectionLabel}>Whispers from overnight</span>
+            <h2 style={T.sectionLabel}>Whispers from overnight</h2>
             <div style={T.divider} />
 
             {unreadThreads.map((conv, i) => {
@@ -246,7 +246,7 @@ export default function MorningSummary({ conversations, currentUser, onSelectCon
             transition={{ delay: 0.4, duration: 0.4 }}
             style={{ marginTop: 40 }}
           >
-            <span style={T.sectionLabelMuted}>Recent</span>
+            <h2 style={T.sectionLabelMuted}>Recent</h2>
             <div style={T.divider} />
 
             {recentRead.map((conv, i) => (
