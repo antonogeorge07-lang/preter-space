@@ -1,3 +1,4 @@
+import { saveUserLanguage } from '@/lib/saveUserLanguage';
 import { db } from '@/lib/db';
 
 import { useEffect, useState } from 'react';
@@ -281,7 +282,7 @@ export default function Landing() {
 
   const handleLanguageDone = async () => {
     setLoading(true);
-    try { await db.auth.updateMe({ default_language: lang.code }); } catch {}
+    await saveUserLanguage(lang.code);
     setStep('done'); setLoading(false);
   };
 

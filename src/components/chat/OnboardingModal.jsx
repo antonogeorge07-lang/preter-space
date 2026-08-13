@@ -1,3 +1,4 @@
+import { saveUserLanguage } from '@/lib/saveUserLanguage';
 import { db } from '@/lib/db';
 import { convexChat } from '@/lib/convexChat';
 
@@ -91,7 +92,7 @@ export default function OnboardingModal({ isOpen, onComplete, currentUser }) {
   const handleNext = async () => {
     if (step === 1) {
       setSaving(true);
-      try { await db.auth.updateMe({ default_language: selectedLang }); }
+      try { await saveUserLanguage(selectedLang, currentUser); }
       catch {}
       finally { setSaving(false); }
     }
