@@ -72,7 +72,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
       onTouchEnd={handleTouchEnd}
       className={`flex ${isMe ? 'justify-end' : 'justify-start'} px-4 sm:px-6 w-full group`}
     >
-      <div className={`max-w-[68%] sm:max-w-[60%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+      <div className={`min-w-0 max-w-[85%] sm:max-w-[72%] lg:max-w-[60%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
         {/* Reply preview */}
         {message.reply_to_id && (
           <div className={`mb-1.5 px-3 py-1.5 rounded-xl border-l-2 text-xs opacity-70 ${isMe ? 'border-primary' : 'border-primary/60'}`}
@@ -82,7 +82,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
           </div>
         )}
 
-        <div className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'} relative`}>
+        <div className={`flex items-end gap-2 min-w-0 max-w-full ${isMe ? 'flex-row-reverse' : 'flex-row'} relative`}>
           {/* Hover action buttons */}
           <AnimatePresence>
             {showActions && (
@@ -147,7 +147,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
 
           {/* Bubble */}
           <div
-            className={`rounded-2xl px-4 py-3 ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+            className={`rounded-2xl px-4 py-3 min-w-0 max-w-full overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
             style={{
               background: isMe ? 'var(--bubble-outgoing)' : 'var(--bubble-incoming)',
               border: '1px solid var(--card-border)',
@@ -178,7 +178,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
                 <motion.p key={displayText}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   transition={{ duration: 0.14 }}
-                  className="text-[15px] leading-relaxed break-words"
+                  className="text-[15px] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]"
                   style={{ color: 'var(--foreground)', fontFamily: 'var(--font-body)' }}>
                   {displayText}
                   {message.edited && <span className="text-[10px] ml-1.5 opacity-40">(edited)</span>}
