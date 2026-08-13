@@ -126,6 +126,7 @@ export const convexApi = {
 };
 
 export interface ConvexConversationPatch {
+  [key: string]: unknown;
   title?: string;
   avatarUrl?: string;
   participantIds?: string[];
