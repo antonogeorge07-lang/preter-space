@@ -1,10 +1,19 @@
-import { db } from '@/lib/db';
-
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from '@/lib/router-compat';
 
+import { db } from '@/lib/db';
 import { detectAndTranslate } from '@/lib/translation';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import {
+  useChatIdentity,
+  useChatConversations,
+  useChatMessages,
+  useChatPresence,
+  useReadReceipts,
+  useChatMutations,
+} from '@/hooks/useConvexChat';
+import { safeJson } from '@/lib/chatMap';
+import { convexChat } from '@/lib/convexChat';
 import ConversationList from '@/components/chat/ConversationList';
 import ChatView from '@/components/chat/ChatView';
 import MorningSummary from '@/components/chat/MorningSummary';
@@ -21,14 +30,14 @@ import GlobalSearch from '@/components/chat/GlobalSearch';
 import ContactDiscovery from '@/components/chat/ContactDiscovery';
 import { registerPushNotifications, notifyIfHidden } from '@/lib/pushNotifications';
 import OnboardingModal from '@/components/chat/OnboardingModal';
-import { enqueue, flushQueue, getQueue } from '@/lib/offlineQueue';
+import { enqueue, flushQueue } from '@/lib/offlineQueue';
 import { registerActiveDeviceSession, isCurrentSessionAlive } from '@/lib/deviceSession';
 import { toast } from '@/components/ui/use-toast';
 
 export default function Forge() {
   const { chatId } = useParams();
   const navigate = useNavigate();
-  const currentUser = useCurrentUser();
+  const authUser = useCurrentUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
   const [videoRecorderOpen, setVideoRecorderOpen] = useState(false);
@@ -38,28 +47,55 @@ export default function Forge() {
   const [callType, setCallType] = useState('audio');
   const [incomingCallSession, setIncomingCallSession] = useState(null);
   const [callConversation, setCallConversation] = useState(null);
-  const [conversations, setConversations] = useState([]);
-  const [conversationsLoaded, setConversationsLoaded] = useState(false);
-  const [messages, setMessages] = useState([]);
   const [replyTo, setReplyTo] = useState(null); // { id, content, sender_name }
   const [blockReportTarget, setBlockReportTarget] = useState(null);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [contactDiscoveryOpen, setContactDiscoveryOpen] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(() => !!localStorage.getItem('vl_onboarded'));
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const typingTimerRef = useRef(null);
-  const chatIdRef = useRef(chatId);
-  chatIdRef.current = chatId;
+  const [lastSeenMessageId, setLastSeenMessageId] = useState(null);
+
+  // ── Convex identity (participants are keyed by email) ────────────────────
+  const { key: myKey, blockedUserIds } = useChatIdentity(authUser);
+  const currentUser = useMemo(
+    () => (authUser ? { ...authUser, id: myKey || authUser.id, auth_id: authUser.id } : null),
+    [authUser, myKey],
+  );
+
+  const {
+    sendMessage: sendConvexMessage,
+    updateMessage,
+    toggleReaction,
+    createConversation,
+    updateConversation,
+    removeConversation,
+  } = useChatMutations();
+
+  // ── Live conversations ───────────────────────────────────────────────────
+  const { conversations: myConversations, loaded: conversationsLoaded } = useChatConversations(myKey);
+  const activeConversation = chatId ? myConversations.find((c) => c.id === chatId) || null : null;
+
+  // ── Live messages / reactions / read receipts ────────────────────────────
+  const { messages, messageDocs } = useChatMessages(chatId, { blockedUserIds });
+  useReadReceipts({ conversationId: chatId, key: myKey, messageDocs });
+
+  // ── Live presence + typing ───────────────────────────────────────────────
+  const otherKey = (activeConversation?.participant_ids || []).find((id) => id !== myKey) || null;
+  const { othersTyping, contactPresence, notifyTyping, setTyping } = useChatPresence({
+    conversationId: chatId,
+    key: myKey,
+    otherKey,
+  });
 
   // ── Register push notifications once authenticated ───────────────────────
   useEffect(() => {
-    if (currentUser) registerPushNotifications();
-  }, [currentUser?.id]);
+    if (authUser) registerPushNotifications();
+  }, [authUser?.id]);
 
   // ── Register device session + poll for remote kill ───────────────────────
   useEffect(() => {
-    if (!currentUser) return;
-    registerActiveDeviceSession(currentUser);
+    if (!authUser) return;
+    registerActiveDeviceSession(authUser);
     const interval = setInterval(async () => {
       const fresh = await db.auth.me();
       if (!isCurrentSessionAlive(fresh)) {
@@ -67,7 +103,7 @@ export default function Forge() {
       }
     }, 30000);
     return () => clearInterval(interval);
-  }, [currentUser?.id]);
+  }, [authUser?.id]);
 
   // ── Online/offline tracking + queue flush ────────────────────────────────
   useEffect(() => {
@@ -75,474 +111,326 @@ export default function Forge() {
       setIsOnline(true);
       flushQueue(async (item) => {
         const { _id, _ts, ...payload } = item;
-        await db.entities.Message.create(payload);
+        await convexChat.sendMessage(payload);
       });
     };
     const goOffline = () => setIsOnline(false);
     window.addEventListener('online', goOnline);
     window.addEventListener('offline', goOffline);
-    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
   }, []);
 
-  // ── Real-time conversations ──────────────────────────────────────────────
+  // ── Notify on new incoming messages while the tab is hidden ──────────────
   useEffect(() => {
-    db.entities.Conversation.list('-last_message_time', 200).then(all => {
-      setConversations(all);
-      setConversationsLoaded(true);
-    });
-    const unsub = db.entities.Conversation.subscribe((event) => {
-      setConversations(prev => {
-        if (event.type === 'create') return [event.data, ...prev];
-        if (event.type === 'update') return prev.map(c => c.id === event.data.id ? event.data : c);
-        if (event.type === 'delete') return prev.filter(c => c.id !== event.data.id);
-        return prev;
+    if (!messages.length) return;
+    const latest = messages[messages.length - 1];
+    if (latest.id === lastSeenMessageId) return;
+    setLastSeenMessageId(latest.id);
+    if (!lastSeenMessageId) return; // skip the initial load
+    if (latest.sender_id !== myKey) {
+      notifyIfHidden({
+        title: latest.sender_name || 'Preter',
+        body: latest.translated_content || latest.content || 'New message',
+        url: `/chat/${latest.conversation_id}`,
       });
-    });
-    return unsub;
-  }, []);
+    }
+  }, [messages, myKey, lastSeenMessageId]);
 
-  // ── Real-time messages for active chat ──────────────────────────────────
-  useEffect(() => {
-    if (!chatId) { setMessages([]); return; }
-    db.entities.Message.filter({ conversation_id: chatId }, 'created_date', 300).then(msgs => {
-      setMessages(msgs);
-    });
-    const unsub = db.entities.Message.subscribe((event) => {
-      if (event.data?.conversation_id !== chatIdRef.current) return;
-      setMessages(prev => {
-        if (event.type === 'create') {
-          const msg = event.data;
-          // Notify if tab hidden and message is from someone else
-          if (msg.sender_id !== currentUser?.id) {
-            notifyIfHidden({ title: msg.sender_name || 'Forge', body: msg.translated_content || msg.content || 'New message', url: `/chat/${msg.conversation_id}` });
-          }
-          return [...prev, msg];
-        }
-        if (event.type === 'update') return prev.map(m => m.id === event.data.id ? event.data : m);
-        if (event.type === 'delete') return prev.filter(m => m.id !== event.data.id);
-        return prev;
-      });
-    });
-    return unsub;
-  }, [chatId]);
-
-  // Filter to conversations this user owns or is a participant in
-  const myConversations = conversations.filter(c => {
-    if (!currentUser) return true;
-    const ids = c.participant_ids || [];
-    return c.created_by_id === currentUser.id || ids.includes(currentUser.id);
-  });
-
-  const activeConversation = chatId ? myConversations.find(c => c.id === chatId) || null : null;
-
-  // Derive blocked user IDs — stored as a native array on the user profile
-  const blockedUserIds = Array.isArray(currentUser?.blocked_user_ids)
-    ? currentUser.blocked_user_ids
-    : [];
-
-  // Mark messages as 'me'/'them', filter out messages from blocked users
-  const markedMessages = messages
-    .filter(msg => !blockedUserIds.includes(msg.sender_id))
-    .map(msg => ({
-      ...msg,
-      sender: (msg.is_guide || msg.sender_id !== currentUser?.id) ? 'them' : 'me',
-    }));
+  // Mark messages as 'me'/'them'
+  const markedMessages = useMemo(
+    () =>
+      messages.map((msg) => ({
+        ...msg,
+        sender: msg.is_guide || msg.sender_id !== myKey ? 'them' : 'me',
+      })),
+    [messages, myKey],
+  );
 
   // Get current user's preferred language for this conversation
-  const getMyLang = useCallback((conv) => {
-    if (!conv || !currentUser) return conv?.preferred_language || 'en';
-    try {
-      const langs = JSON.parse(conv.participant_languages || '{}');
-      return langs[currentUser.id] || conv.preferred_language || 'en';
-    } catch { return conv.preferred_language || 'en'; }
-  }, [currentUser]);
+  const getMyLang = useCallback(
+    (conv) => {
+      if (!conv || !myKey) return conv?.preferred_language || 'en';
+      const langs = safeJson(conv.participant_languages, {});
+      return langs[myKey] || conv.preferred_language || 'en';
+    },
+    [myKey],
+  );
 
-  // Mark unread as read + mark messages read_by when opening chat
-  useEffect(() => {
-    if (!chatId || !currentUser || !activeConversation) return;
-    // Clear unread count
-    try {
-      const counts = JSON.parse(activeConversation.unread_counts || '{}');
-      if (counts[currentUser.id] > 0) {
-        counts[currentUser.id] = 0;
-        db.entities.Conversation.update(chatId, { unread_counts: JSON.stringify(counts) });
-      }
-    } catch {}
-    // Mark unread messages as read_by this user
-    const unread = messages.filter(m => {
-      if (m.sender_id === currentUser.id || m.deleted) return false;
-      try { const rb = JSON.parse(m.read_by || '[]'); return !rb.includes(currentUser.id); } catch { return true; }
-    });
-    unread.forEach(m => {
-      try {
-        const rb = JSON.parse(m.read_by || '[]');
-        db.entities.Message.update(m.id, { read_by: JSON.stringify([...rb, currentUser.id]) });
-      } catch {}
-    });
-  }, [chatId, currentUser?.id, messages.length]);
-
-  const selectConversation = useCallback((conv) => {
-    if (conv) navigate(`/chat/${conv.id}`);
-    else navigate('/');
-    setSidebarOpen(false);
-  }, [navigate]);
-
-  // ── Typing indicator ─────────────────────────────────────────────────────
-  const sendTyping = useCallback(async (isTyping) => {
-    if (!activeConversation || !currentUser) return;
-    try {
-      const ids = JSON.parse(activeConversation.typing_user_ids || '[]');
-      const alreadyIn = ids.includes(currentUser.id);
-      if (isTyping && !alreadyIn) {
-        await db.entities.Conversation.update(activeConversation.id, {
-          typing_user_ids: JSON.stringify([...ids, currentUser.id]),
-        });
-      } else if (!isTyping && alreadyIn) {
-        await db.entities.Conversation.update(activeConversation.id, {
-          typing_user_ids: JSON.stringify(ids.filter(id => id !== currentUser.id)),
-        });
-      }
-    } catch {}
-  }, [activeConversation, currentUser]);
-
-  const handleTyping = useCallback(() => {
-    sendTyping(true);
-    clearTimeout(typingTimerRef.current);
-    typingTimerRef.current = setTimeout(() => sendTyping(false), 3000);
-  }, [sendTyping]);
-
-  // Stop typing on unmount/conv change
-  useEffect(() => {
-    return () => {
-      clearTimeout(typingTimerRef.current);
-      if (activeConversation && currentUser) {
-        try {
-          const ids = JSON.parse(activeConversation.typing_user_ids || '[]');
-          if (ids.includes(currentUser.id)) {
-            db.entities.Conversation.update(activeConversation.id, {
-              typing_user_ids: JSON.stringify(ids.filter(id => id !== currentUser.id)),
-            });
-          }
-        } catch {}
-      }
-    };
-  }, [chatId]);
-
-  // Helper: get a specific participant's language in a conversation
   const getParticipantLang = useCallback((conv, userId) => {
     if (!conv || !userId) return conv?.preferred_language || 'en';
-    try {
-      const langs = JSON.parse(conv.participant_languages || '{}');
-      return langs[userId] || conv.preferred_language || 'en';
-    } catch { return conv.preferred_language || 'en'; }
+    const langs = safeJson(conv.participant_languages, {});
+    return langs[userId] || conv.preferred_language || 'en';
   }, []);
+
+  // Clear my unread counter when opening a conversation
+  useEffect(() => {
+    if (!chatId || !myKey || !activeConversation) return;
+    const counts = safeJson(activeConversation.unread_counts, {});
+    if (counts[myKey] > 0) {
+      updateConversation(chatId, { unread_counts: { ...counts, [myKey]: 0 } }).catch(() => {});
+    }
+  }, [chatId, myKey, activeConversation?.unread_counts]);
+
+  const selectConversation = useCallback(
+    (conv) => {
+      if (conv) navigate(`/chat/${conv.id}`);
+      else navigate('/');
+      setSidebarOpen(false);
+    },
+    [navigate],
+  );
 
   // ── Send message ─────────────────────────────────────────────────────────
-  const sendMessage = useCallback(async (text, expiresAt) => {
-    if (!activeConversation || !currentUser || isProcessing) return;
+  const sendMessage = useCallback(
+    async (text, expiresAt) => {
+      if (!activeConversation || !myKey || isProcessing) return;
 
-    // Check if any recipient has blocked the current user
-    const blockCheckIds = (activeConversation.participant_ids || []).filter(id => id !== currentUser.id);
-    // We can only enforce our own block list client-side; backend RLS guards the rest
-    if (blockedUserIds.some(id => blockCheckIds.includes(id))) {
-      toast({ title: 'Contact blocked', description: 'Unblock them to send messages.', variant: 'destructive' });
-      return;
-    }
-    setIsProcessing(true);
-    sendTyping(false);
-    clearTimeout(typingTimerRef.current);
-
-    // Find the OTHER participant(s) and their language
-    const participantIds = activeConversation.participant_ids || [];
-    const recipientIds = participantIds.filter(id => id !== currentUser.id);
-    // Use first recipient's language as the target translation language
-    const recipientLang = recipientIds.length > 0
-      ? getParticipantLang(activeConversation, recipientIds[0])
-      : getMyLang(activeConversation);
-
-    const msgPayload = {
-      conversation_id: activeConversation.id,
-      sender_id: currentUser.id,
-      sender_name: currentUser.full_name || currentUser.email,
-      content: text,
-      translated_content: '',
-      original_language: '',
-      target_language: recipientLang,
-      type: 'text',
-      ...(expiresAt && { expires_at: expiresAt }),
-    };
-
-    if (replyTo) {
-      msgPayload.reply_to_id = replyTo.id;
-      msgPayload.reply_to_content = replyTo.content;
-      msgPayload.reply_to_sender = replyTo.sender_name;
-      setReplyTo(null);
-    }
-
-    if (!navigator.onLine) {
-      enqueue(msgPayload);
-      setIsProcessing(false);
-      return;
-    }
-
-    // Recipient-side block lists are enforced by the database on insert.
-    let newMsg;
-    try {
-      newMsg = await db.entities.Message.create(msgPayload);
-    } catch (err) {
-      const blocked = /blocked by recipient/i.test(err?.message || '');
-      toast({
-        title: blocked ? 'Message not delivered' : 'Could not send message',
-        description: blocked
-          ? 'This user has blocked you. You cannot send them messages.'
-          : 'Please check your connection and try again.',
-        variant: 'destructive',
-      });
-      setIsProcessing(false);
-      return;
-    }
-
-    // Increment unread counts for all OTHER participants
-    try {
-      const counts = JSON.parse(activeConversation.unread_counts || '{}');
-      participantIds.forEach(pid => {
-        if (pid !== currentUser.id) counts[pid] = (counts[pid] || 0) + 1;
-      });
-      await db.entities.Conversation.update(activeConversation.id, {
-        last_message_preview: text,
-        last_message_time: new Date().toISOString(),
-        unread_counts: JSON.stringify(counts),
-      });
-    } catch {
-      await db.entities.Conversation.update(activeConversation.id, {
-        last_message_preview: text,
-        last_message_time: new Date().toISOString(),
-      });
-    }
-
-    setIsProcessing(false);
-
-    // Translate to recipient's language so they can read it
-    const { translatedText: translated, detectedLang: originalLang } = await detectAndTranslate(text, recipientLang);
-    await db.entities.Message.update(newMsg.id, {
-      translated_content: translated,
-      original_language: originalLang,
-    });
-
-    if (translated !== text) {
-      await db.entities.Conversation.update(activeConversation.id, {
-        last_message_preview: translated,
-      });
-    }
-  }, [activeConversation, currentUser, replyTo, getMyLang, getParticipantLang, sendTyping]);
-
-  const handleReaction = useCallback(async (msgId, emoji) => {
-    if (!currentUser) return;
-    const msg = messages.find(m => m.id === msgId);
-    if (!msg) return;
-    const reactions = (() => { try { return JSON.parse(msg.reactions || '{}'); } catch { return {}; } })();
-    const users = reactions[emoji] || [];
-    if (users.includes(currentUser.id)) {
-      reactions[emoji] = users.filter(id => id !== currentUser.id);
-      if (reactions[emoji].length === 0) delete reactions[emoji];
-    } else {
-      reactions[emoji] = [...users, currentUser.id];
-    }
-    await db.entities.Message.update(msgId, { reactions: JSON.stringify(reactions) });
-  }, [currentUser, messages]);
-
-  const handleDeleteMessage = useCallback(async (messageId) => {
-    await db.entities.Message.update(messageId, { deleted: true });
-  }, []);
-
-  const handleEditMessage = useCallback(async (messageId, newContent) => {
-    await db.entities.Message.update(messageId, { content: newContent, edited: true });
-  }, []);
-
-  const handlePinConversation = useCallback(async (conv) => {
-    await db.entities.Conversation.update(conv.id, { pinned: !conv.pinned });
-  }, []);
-
-  const handleArchiveConversation = useCallback(async (conv) => {
-    await db.entities.Conversation.update(conv.id, { archived: !conv.archived });
-    if (chatId === conv.id) navigate('/');
-  }, [chatId, navigate]);
-
-  const handleDeleteConversation = useCallback(async (conv) => {
-    await db.entities.Conversation.delete(conv.id);
-    if (chatId === conv.id) navigate('/');
-  }, [chatId, navigate]);
-
-  const handleMuteConversation = useCallback(async (conv) => {
-    await db.entities.Conversation.update(conv.id, { muted: !conv.muted });
-  }, []);
-
-  const handleLanguageChange = useCallback(async (langCode) => {
-    if (!activeConversation || !currentUser) return;
-    // Save per-user language preference
-    try {
-      const langs = JSON.parse(activeConversation.participant_languages || '{}');
-      langs[currentUser.id] = langCode;
-      await db.entities.Conversation.update(activeConversation.id, {
-        participant_languages: JSON.stringify(langs),
-        preferred_language: langCode, // keep legacy field too
-      });
-    } catch {
-      await db.entities.Conversation.update(activeConversation.id, { preferred_language: langCode });
-    }
-  }, [activeConversation, currentUser]);
-
-  const handleImageSend = useCallback(async (imageUrl) => {
-    if (!activeConversation || !currentUser) return;
-    await db.entities.Message.create({
-      conversation_id: activeConversation.id,
-      sender_id: currentUser.id,
-      sender_name: currentUser.full_name || currentUser.email,
-      content: '',
-      type: 'image',
-      image_url: imageUrl,
-    });
-    await db.entities.Conversation.update(activeConversation.id, {
-      last_message_preview: '🖼️ Image',
-      last_message_time: new Date().toISOString(),
-    });
-  }, [activeConversation, currentUser]);
-
-  const handleFileSend = useCallback(async ({ file_url, file_name, file_size }) => {
-    if (!activeConversation || !currentUser) return;
-    await db.entities.Message.create({
-      conversation_id: activeConversation.id,
-      sender_id: currentUser.id,
-      sender_name: currentUser.full_name || currentUser.email,
-      content: '',
-      type: 'file',
-      file_url,
-      file_name,
-      file_size,
-    });
-    await db.entities.Conversation.update(activeConversation.id, {
-      last_message_preview: `📎 ${file_name}`,
-      last_message_time: new Date().toISOString(),
-    });
-  }, [activeConversation, currentUser]);
-
-  const handleBlockReport = useCallback((conv) => {
-    setBlockReportTarget(conv);
-  }, []);
-
-  const handleNewConversation = useCallback(async ({ name, lang, avatar, isGroup, inviteCode, participantIds, participantNames }) => {
-    const myId = currentUser?.id;
-    const allIds = participantIds?.length ? participantIds : [myId].filter(Boolean);
-    const initialLangs = {};
-    if (myId) initialLangs[myId] = lang || 'en';
-
-    const conv = await db.entities.Conversation.create({
-      participant_name: name,
-      participant_avatar: avatar,
-      preferred_language: lang || 'en',
-      participant_ids: allIds,
-      participant_names: participantNames || [],
-      participant_languages: JSON.stringify(initialLangs),
-      invite_code: inviteCode,
-      invite_open: !!inviteCode,
-      unread_counts: '{}',
-      pinned: false,
-      archived: false,
-      is_group: !!isGroup,
-    });
-    navigate(`/chat/${conv.id}`);
-    return conv;
-  }, [navigate, currentUser]);
-
-  const handleVoiceNoteReady = useCallback(async (voiceData) => {
-    if (!activeConversation || !currentUser) return;
-    await db.entities.Message.create({
-      conversation_id: activeConversation.id,
-      sender_id: currentUser.id,
-      sender_name: currentUser.full_name || currentUser.email,
-      content: voiceData.transcript,
-      translated_content: voiceData.translatedTranscript,
-      original_language: voiceData.originalLanguage,
-      target_language: voiceData.targetLanguage,
-      type: 'voice',
-      audio_url: voiceData.audioUrl,
-      transcript: voiceData.transcript,
-      translated_transcript: voiceData.translatedTranscript,
-    });
-    await db.entities.Conversation.update(activeConversation.id, {
-      last_message_preview: `🎤 ${voiceData.translatedTranscript || voiceData.transcript}`,
-      last_message_time: new Date().toISOString(),
-    });
-  }, [activeConversation, currentUser]);
-
-  const handleStartCall = useCallback((type = 'audio') => {
-    setCallType(type);
-    setIncomingCallSession(null);
-    setCallConversation(activeConversation);
-    setCallOpen(true);
-  }, [activeConversation]);
-
-  const handleIncomingCall = useCallback((session, conv) => {
-    setCallType(session?.call_type || 'audio');
-    setIncomingCallSession(session);
-    setCallConversation(conv || activeConversation);
-    setCallOpen(true);
-  }, [activeConversation]);
-
-  // ── Presence: update my own presence every 30s ───────────────────────────
-  useEffect(() => {
-    if (!currentUser) return;
-    const upsertPresence = async () => {
-      const existing = await db.entities.UserPresence.filter({ user_id: currentUser.id }, '-updated_date', 1);
-      if (existing.length > 0) {
-        await db.entities.UserPresence.update(existing[0].id, { last_active: new Date().toISOString(), status: 'online', user_name: currentUser.full_name || currentUser.email });
-      } else {
-        await db.entities.UserPresence.create({ user_id: currentUser.id, user_name: currentUser.full_name || currentUser.email, last_active: new Date().toISOString(), status: 'online' });
+      const participantIds = activeConversation.participant_ids || [];
+      const recipientIds = participantIds.filter((id) => id !== myKey);
+      if (blockedUserIds.some((id) => recipientIds.includes(id))) {
+        toast({ title: 'Contact blocked', description: 'Unblock them to send messages.', variant: 'destructive' });
+        return;
       }
-    };
-    upsertPresence();
-    const interval = setInterval(upsertPresence, 30000);
-    return () => clearInterval(interval);
-  }, [currentUser?.id]);
 
-  // ── Presence: read contact's presence for active chat ────────────────────
-  const [contactPresence, setContactPresence] = useState(null);
-  useEffect(() => {
-    if (!activeConversation || !currentUser) { setContactPresence(null); return; }
-    const otherId = (activeConversation.participant_ids || []).find(id => id !== currentUser.id);
-    if (!otherId) { setContactPresence(null); return; }
-    const load = async () => {
-      const records = await db.entities.UserPresence.filter({ user_id: otherId }, '-updated_date', 1);
-      if (!records.length) { setContactPresence(null); return; }
-      const rec = records[0];
-      const diff = (Date.now() - new Date(rec.last_active).getTime()) / 1000;
-      if (diff < 90) { setContactPresence('online'); return; }
-      const mins = Math.round(diff / 60);
-      if (mins < 60) setContactPresence(`${mins}m ago`);
-      else if (mins < 1440) setContactPresence(`${Math.round(mins / 60)}h ago`);
-      else setContactPresence(`${Math.round(mins / 1440)}d ago`);
-    };
-    load();
-    const interval = setInterval(load, 30000);
-    return () => clearInterval(interval);
-  }, [activeConversation?.id, currentUser?.id]);
+      setIsProcessing(true);
+      setTyping(false);
+
+      const recipientLang = recipientIds.length > 0
+        ? getParticipantLang(activeConversation, recipientIds[0])
+        : getMyLang(activeConversation);
+
+      const meta = {
+        senderName: currentUser?.full_name || myKey,
+        type: 'text',
+        targetLanguage: recipientLang,
+        ...(expiresAt ? { expiresAt } : {}),
+        ...(replyTo ? { replyToContent: replyTo.content, replyToSender: replyTo.sender_name } : {}),
+      };
+
+      const payload = {
+        conversationId: activeConversation.id,
+        senderId: myKey,
+        text,
+        meta,
+        ...(replyTo ? { replyToId: replyTo.id } : {}),
+      };
+      if (replyTo) setReplyTo(null);
+
+      if (!navigator.onLine) {
+        enqueue(payload);
+        setIsProcessing(false);
+        return;
+      }
+
+      let messageId;
+      try {
+        messageId = await sendConvexMessage(payload);
+      } catch (err) {
+        const blocked = /blocked/i.test(err?.message || '');
+        toast({
+          title: blocked ? 'Message not delivered' : 'Could not send message',
+          description: blocked
+            ? 'This user has blocked you. You cannot send them messages.'
+            : 'Please check your connection and try again.',
+          variant: 'destructive',
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Bump conversation preview + unread counters
+      const counts = safeJson(activeConversation.unread_counts, {});
+      recipientIds.forEach((pid) => { counts[pid] = (counts[pid] || 0) + 1; });
+      await updateConversation(activeConversation.id, {
+        last_message_preview: text,
+        last_message_time: Date.now(),
+        unread_counts: counts,
+      }).catch(() => {});
+
+      setIsProcessing(false);
+
+      // Translate for the recipient
+      const { translatedText: translated, detectedLang: originalLang } = await detectAndTranslate(text, recipientLang);
+      await updateMessage({
+        messageId,
+        translations: { [recipientLang]: translated },
+        meta: { ...meta, translatedContent: translated, originalLanguage: originalLang },
+      }).catch(() => {});
+
+      if (translated !== text) {
+        await updateConversation(activeConversation.id, { last_message_preview: translated }).catch(() => {});
+      }
+    },
+    [activeConversation, myKey, currentUser, replyTo, blockedUserIds, isProcessing, getMyLang, getParticipantLang, sendConvexMessage, updateMessage, updateConversation, setTyping],
+  );
+
+  // ── Media / file messages ────────────────────────────────────────────────
+  const sendMediaMessage = useCallback(
+    async ({ meta, text = '', preview }) => {
+      if (!activeConversation || !myKey) return;
+      await sendConvexMessage({
+        conversationId: activeConversation.id,
+        senderId: myKey,
+        text,
+        meta: { senderName: currentUser?.full_name || myKey, ...meta },
+      });
+      await updateConversation(activeConversation.id, {
+        last_message_preview: preview,
+        last_message_time: Date.now(),
+      }).catch(() => {});
+    },
+    [activeConversation, myKey, currentUser, sendConvexMessage, updateConversation],
+  );
+
+  const handleReaction = useCallback(
+    async (msgId, emoji) => {
+      if (!myKey) return;
+      await toggleReaction({ messageId: msgId, userId: myKey, emoji });
+    },
+    [myKey, toggleReaction],
+  );
+
+  const handleDeleteMessage = useCallback(
+    async (messageId) => { await updateMessage({ messageId, deleted: true }); },
+    [updateMessage],
+  );
+
+  const handleEditMessage = useCallback(
+    async (messageId, newContent) => { await updateMessage({ messageId, text: newContent, edited: true }); },
+    [updateMessage],
+  );
+
+  const handlePinConversation = useCallback(
+    async (conv) => { await updateConversation(conv.id, { pinned: !conv.pinned }); },
+    [updateConversation],
+  );
+
+  const handleArchiveConversation = useCallback(
+    async (conv) => {
+      await updateConversation(conv.id, { archived: !conv.archived });
+      if (chatId === conv.id) navigate('/');
+    },
+    [chatId, navigate, updateConversation],
+  );
+
+  const handleDeleteConversation = useCallback(
+    async (conv) => {
+      await removeConversation({ conversationId: conv.id });
+      if (chatId === conv.id) navigate('/');
+    },
+    [chatId, navigate, removeConversation],
+  );
+
+  const handleMuteConversation = useCallback(
+    async (conv) => { await updateConversation(conv.id, { muted: !conv.muted }); },
+    [updateConversation],
+  );
+
+  const handleLanguageChange = useCallback(
+    async (langCode) => {
+      if (!activeConversation || !myKey) return;
+      const langs = safeJson(activeConversation.participant_languages, {});
+      await updateConversation(activeConversation.id, {
+        participant_languages: { ...langs, [myKey]: langCode },
+        preferred_language: langCode,
+      });
+    },
+    [activeConversation, myKey, updateConversation],
+  );
+
+  const handleImageSend = useCallback(
+    (imageUrl) => sendMediaMessage({ meta: { type: 'image', imageUrl }, preview: '🖼️ Image' }),
+    [sendMediaMessage],
+  );
+
+  const handleFileSend = useCallback(
+    ({ file_url, file_name, file_size }) =>
+      sendMediaMessage({
+        meta: { type: 'file', fileUrl: file_url, fileName: file_name, fileSize: file_size },
+        preview: `📎 ${file_name}`,
+      }),
+    [sendMediaMessage],
+  );
+
+  const handleBlockReport = useCallback((conv) => { setBlockReportTarget(conv); }, []);
+
+  const handleNewConversation = useCallback(
+    async ({ name, lang, avatar, isGroup, inviteCode, participantIds, participantNames }) => {
+      if (!myKey) return null;
+      const allIds = participantIds?.length ? participantIds : [myKey];
+      const conversationId = await createConversation({
+        isGroup: !!isGroup,
+        creatorId: myKey,
+        participantIds: allIds,
+        title: name,
+        ...(avatar ? { avatarUrl: avatar } : {}),
+        participantNames: participantNames || [],
+        participantLanguages: { [myKey]: lang || 'en' },
+        preferredLanguage: lang || 'en',
+        unreadCounts: {},
+        pinned: false,
+        archived: false,
+        ...(inviteCode ? { inviteCode, inviteOpen: true } : {}),
+      });
+      navigate(`/chat/${conversationId}`);
+      return { id: conversationId };
+    },
+    [createConversation, myKey, navigate],
+  );
+
+  const handleVoiceNoteReady = useCallback(
+    (voiceData) =>
+      sendMediaMessage({
+        text: voiceData.transcript || '',
+        meta: {
+          type: 'voice',
+          audioUrl: voiceData.audioUrl,
+          transcript: voiceData.transcript,
+          translatedTranscript: voiceData.translatedTranscript,
+          translatedContent: voiceData.translatedTranscript,
+          originalLanguage: voiceData.originalLanguage,
+          targetLanguage: voiceData.targetLanguage,
+        },
+        preview: `🎤 ${voiceData.translatedTranscript || voiceData.transcript || ''}`,
+      }),
+    [sendMediaMessage],
+  );
+
+  const handleStartCall = useCallback(
+    (type = 'audio') => {
+      setCallType(type);
+      setIncomingCallSession(null);
+      setCallConversation(activeConversation);
+      setCallOpen(true);
+    },
+    [activeConversation],
+  );
+
+  const handleIncomingCall = useCallback(
+    (session, conv) => {
+      setCallType(session?.call_type || 'audio');
+      setIncomingCallSession(session);
+      setCallConversation(conv || activeConversation);
+      setCallOpen(true);
+    },
+    [activeConversation],
+  );
 
   const showChatOnMobile = !!chatId;
   const myLang = getMyLang(activeConversation);
 
-  // Derive real typing users (not me)
-  const typingUserIds = (() => {
-    try { return JSON.parse(activeConversation?.typing_user_ids || '[]'); } catch { return []; }
-  })();
-  const othersTyping = typingUserIds.filter(id => id !== currentUser?.id);
-
-  // Derive unread count per conversation for sidebar
-  const conversationsWithUnread = myConversations.map(conv => {
-    try {
-      const counts = JSON.parse(conv.unread_counts || '{}');
-      return { ...conv, unread_count: counts[currentUser?.id] || 0 };
-    } catch { return { ...conv, unread_count: 0 }; }
-  });
+  // Unread counts for the sidebar
+  const conversationsWithUnread = useMemo(
+    () =>
+      myConversations.map((conv) => ({
+        ...conv,
+        unread_count: safeJson(conv.unread_counts, {})[myKey] || 0,
+      })),
+    [myConversations, myKey],
+  );
 
   return (
     <div className="w-screen flex relative overflow-hidden" style={{ background: 'var(--background)', height: '100svh', minHeight: '-webkit-fill-available' }}>
@@ -570,7 +458,7 @@ export default function Forge() {
           onBlockReport={handleBlockReport}
           onProfileClick={() => setProfileOpen(true)}
           onNewConversation={handleNewConversation}
-          onRefresh={() => db.entities.Conversation.list('-last_message_time', 200).then(setConversations)}
+          onRefresh={() => {}}
           onSearchOpen={() => setGlobalSearchOpen(true)}
           onFindPeople={() => setContactDiscoveryOpen(true)}
           currentUser={currentUser}
@@ -586,7 +474,7 @@ export default function Forge() {
             currentUser={currentUser}
             myLang={myLang}
             onSendMessage={sendMessage}
-            onTyping={handleTyping}
+            onTyping={notifyTyping}
             onStartRecording={() => setVoiceRecorderOpen(true)}
             onStartVideo={() => setVideoRecorderOpen(true)}
             onImageSend={handleImageSend}
@@ -637,19 +525,7 @@ export default function Forge() {
         <VideoFilePicker
           onClose={() => setVideoRecorderOpen(false)}
           onVideoReady={async (videoUrl) => {
-            if (!activeConversation || !currentUser) return;
-            await db.entities.Message.create({
-              conversation_id: activeConversation.id,
-              sender_id: currentUser.id,
-              sender_name: currentUser.full_name || currentUser.email,
-              content: '',
-              type: 'video',
-              video_url: videoUrl,
-            });
-            await db.entities.Conversation.update(activeConversation.id, {
-              last_message_preview: '🎥 Video',
-              last_message_time: new Date().toISOString(),
-            });
+            await sendMediaMessage({ meta: { type: 'video', videoUrl }, preview: '🎥 Video' });
             setVideoRecorderOpen(false);
           }}
         />
@@ -671,33 +547,33 @@ export default function Forge() {
         onClose={() => setContactDiscoveryOpen(false)}
         currentUser={currentUser}
         onStartConversation={async (user) => {
-          const otherId = user?.id || user?.user_id;
-          if (!otherId || !currentUser?.id) return;
-          // Reuse an existing 1:1 conversation with this registered user
-          const existing = myConversations.find(c =>
-            !c.is_group && !c.archived &&
-            (c.participant_ids || []).length === 2 &&
-            (c.participant_ids || []).includes(currentUser.id) &&
-            (c.participant_ids || []).includes(otherId)
+          const otherId = user?.email || user?.id;
+          if (!otherId || !myKey) return;
+          const existing = myConversations.find(
+            (c) =>
+              !c.is_group && !c.archived &&
+              (c.participant_ids || []).length === 2 &&
+              (c.participant_ids || []).includes(myKey) &&
+              (c.participant_ids || []).includes(otherId),
           );
           if (existing) { navigate(`/chat/${existing.id}`); setContactDiscoveryOpen(false); return; }
-          // Otherwise create a new conversation, mapping each participant's language
-          const myLang = currentUser.default_language || 'en';
-          const theirLang = user?.default_language || 'en';
-          const otherName = user?.full_name || user?.user_name || 'New Contact';
-          const conv = await db.entities.Conversation.create({
-            participant_name: otherName,
-            participant_avatar: user?.avatar_url || '🧑',
-            preferred_language: theirLang,
-            participant_ids: [currentUser.id, otherId],
-            participant_names: [currentUser.full_name || currentUser.email || '', otherName],
-            participant_languages: JSON.stringify({ [currentUser.id]: myLang, [otherId]: theirLang }),
-            unread_counts: '{}',
+          const mine = currentUser?.default_language || 'en';
+          const theirs = user?.default_language || user?.language || 'en';
+          const otherName = user?.full_name || user?.name || 'New Contact';
+          const conversationId = await createConversation({
+            isGroup: false,
+            creatorId: myKey,
+            participantIds: [myKey, otherId],
+            title: otherName,
+            ...(user?.avatar_url || user?.avatarUrl ? { avatarUrl: user.avatar_url || user.avatarUrl } : {}),
+            participantNames: [currentUser?.full_name || myKey, otherName],
+            participantLanguages: { [myKey]: mine, [otherId]: theirs },
+            preferredLanguage: theirs,
+            unreadCounts: {},
             pinned: false,
             archived: false,
-            is_group: false,
           });
-          navigate(`/chat/${conv.id}`);
+          navigate(`/chat/${conversationId}`);
           setContactDiscoveryOpen(false);
         }}
       />
@@ -715,12 +591,22 @@ export default function Forge() {
         currentUser={currentUser}
         onClose={() => setBlockReportTarget(null)}
         onBlock={async (conv) => {
-          await db.entities.Conversation.update(conv.id, { archived: true });
+          const target = (conv?.participant_ids || []).find((id) => id !== myKey);
+          if (target && myKey) await convexChat.toggleBlock(myKey, target).catch(() => {});
+          await updateConversation(conv.id, { archived: true }).catch(() => {});
           if (chatId === conv.id) navigate('/');
         }}
         onReport={async (conv, reason, details) => {
-          // Log report (could also send email to admin)
-          console.info('Report submitted', { conv: conv?.id, reason, details });
+          const target = (conv?.participant_ids || []).find((id) => id !== myKey);
+          if (!myKey) return;
+          await convexChat
+            .reportConversation({
+              reporterId: myKey,
+              targetId: target || myKey,
+              ...(conv?.id ? { conversationId: conv.id } : {}),
+              reason: [reason, details].filter(Boolean).join(' — '),
+            })
+            .catch(() => {});
         }}
       />
 
@@ -735,7 +621,7 @@ export default function Forge() {
       <OnboardingModal
         isOpen={!onboardingDone && !!currentUser}
         currentUser={currentUser}
-        onComplete={(lang) => {
+        onComplete={() => {
           localStorage.setItem('vl_onboarded', '1');
           setOnboardingDone(true);
         }}
