@@ -197,10 +197,6 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
 
     callIdRef.current = incomingSession.id;
 
-    const call = await convexChat.query
-      ? await convexChat.watchOnce?.(incomingSession.id)
-      : null;
-
     const offer = incomingSession.offer;
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
     remoteDescSetRef.current = true;
@@ -219,7 +215,6 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
     });
 
     watchCall(incomingSession.id, 'callee');
-    void call;
 
     return { stream };
   }, [cleanup, createPC, applyRemoteCandidates, watchCall]);
