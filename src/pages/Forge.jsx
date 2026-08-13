@@ -23,6 +23,7 @@ import { registerPushNotifications, notifyIfHidden } from '@/lib/pushNotificatio
 import OnboardingModal from '@/components/chat/OnboardingModal';
 import { enqueue, flushQueue, getQueue } from '@/lib/offlineQueue';
 import { registerActiveDeviceSession, isCurrentSessionAlive } from '@/lib/deviceSession';
+import { toast } from '@/components/ui/use-toast';
 
 export default function Forge() {
   const { chatId } = useParams();
@@ -244,7 +245,7 @@ export default function Forge() {
     const blockCheckIds = (activeConversation.participant_ids || []).filter(id => id !== currentUser.id);
     // We can only enforce our own block list client-side; backend RLS guards the rest
     if (blockedUserIds.some(id => blockCheckIds.includes(id))) {
-      alert('You have blocked this contact. Unblock them to send messages.');
+      toast({ title: 'Contact blocked', description: 'Unblock them to send messages.', variant: 'destructive' });
       return;
     }
     setIsProcessing(true);
@@ -284,21 +285,22 @@ export default function Forge() {
       return;
     }
 
-    // Use backend function to enforce recipient-side block list before persisting
-    const firstRecipientId = recipientIds[0];
+    // Recipient-side block lists are enforced by the database on insert.
     let newMsg;
     try {
-      const res = await db.functions.invoke('sendMessage', { msgPayload, recipientId: firstRecipientId });
-      if (res.data?.error === 'blocked') {
-        alert('This user has blocked you. You cannot send them messages.');
-        setIsProcessing(false);
-        return;
-      }
-      newMsg = res.data?.message;
-      } catch {
-      // Backend function unavailable — fall back to direct message create
       newMsg = await db.entities.Message.create(msgPayload);
-      }
+    } catch (err) {
+      const blocked = /blocked by recipient/i.test(err?.message || '');
+      toast({
+        title: blocked ? 'Message not delivered' : 'Could not send message',
+        description: blocked
+          ? 'This user has blocked you. You cannot send them messages.'
+          : 'Please check your connection and try again.',
+        variant: 'destructive',
+      });
+      setIsProcessing(false);
+      return;
+    }
 
     // Increment unread counts for all OTHER participants
     try {
