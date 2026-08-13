@@ -1,72 +1,54 @@
-import { db } from '@/lib/db';
-
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, PhoneOff, Video } from 'lucide-react';
+import { useIncomingCalls } from '@/hooks/useConvexChat';
+import { convexChat } from '@/lib/convexChat';
 
 export default function IncomingCallBanner({ currentUser, conversations, onAnswer }) {
-  const [incomingCall, setIncomingCall] = useState(null);
-  const seenRef = useRef(new Set());
+  const [dismissedIds, setDismissedIds] = useState([]);
   const ringtoneRef = useRef(null);
+  const ringingForRef = useRef(null);
 
-  // Use real-time subscription instead of polling
+  // Live Convex subscription to ringing calls addressed to me
+  const calls = useIncomingCalls(currentUser?.id);
+  const call = calls.find((c) => !dismissedIds.includes(c._id)) || null;
+  const conv = call ? conversations.find((c) => c.id === call.conversationId) : null;
+  const incomingCall = call
+    ? {
+        session: {
+          ...call,
+          id: call._id,
+          call_type: call.isVideo ? 'video' : 'audio',
+          caller_name: call.callerName || call.callerId,
+        },
+        conv,
+      }
+    : null;
+
+  // Ringtone whenever a new call arrives
   useEffect(() => {
-    if (!currentUser) return;
-
-    const unsubscribe = db.entities.CallSession.subscribe((event) => {
-      const s = event.data;
-      if (
-        event.type === 'create' &&
-        s.callee_id === currentUser.id &&
-        s.status === 'ringing' &&
-        !seenRef.current.has(s.id)
-      ) {
-        seenRef.current.add(s.id);
-        const conv = conversations.find(c => c.id === s.conversation_id);
-        setIncomingCall({ session: s, conv });
-        // Play ringtone
-        try {
-          const ctx = new AudioContext();
-          const playBeep = (freq, t) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = freq;
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.3, t);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-            osc.start(t); osc.stop(t + 0.4);
-          };
-          for (let i = 0; i < 6; i++) {
-            playBeep(880, ctx.currentTime + i * 0.7);
-            playBeep(1100, ctx.currentTime + i * 0.7 + 0.2);
-          }
-          ringtoneRef.current = ctx;
-        } catch {}
+    if (!call) { ringingForRef.current = null; return; }
+    if (ringingForRef.current === call._id) return;
+    ringingForRef.current = call._id;
+    try {
+      const ctx = new AudioContext();
+      const playBeep = (freq, t) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        osc.start(t); osc.stop(t + 0.4);
+      };
+      for (let i = 0; i < 6; i++) {
+        playBeep(880, ctx.currentTime + i * 0.7);
+        playBeep(1100, ctx.currentTime + i * 0.7 + 0.2);
       }
-
-      // Auto-clear if caller cancels
-      if (event.type === 'update' && s.status !== 'ringing') {
-        setIncomingCall(prev => (prev?.session?.id === s.id ? null : prev));
-      }
-    });
-
-    // Also poll as fallback (for missed subscribe events)
-    const fallback = setInterval(async () => {
-      if (!currentUser) return;
-      try {
-        const sessions = await db.entities.CallSession.filter({ callee_id: currentUser.id, status: 'ringing' });
-        const fresh = sessions.find(s => !seenRef.current.has(s.id));
-        if (fresh) {
-          seenRef.current.add(fresh.id);
-          const conv = conversations.find(c => c.id === fresh.conversation_id);
-          setIncomingCall({ session: fresh, conv });
-        }
-      } catch {}
-    }, 5000);
-
-    return () => { unsubscribe(); clearInterval(fallback); };
-  }, [currentUser?.id]); // only re-run when user changes, not on every conversation update
+      ringtoneRef.current = ctx;
+    } catch {}
+  }, [call?._id]);
 
   const stopRingtone = () => {
     try { ringtoneRef.current?.close(); } catch {}
@@ -76,16 +58,18 @@ export default function IncomingCallBanner({ currentUser, conversations, onAnswe
   const decline = async () => {
     stopRingtone();
     if (incomingCall) {
-      await db.entities.CallSession.update(incomingCall.session.id, { status: 'declined' });
+      setDismissedIds((prev) => [...prev, incomingCall.session.id]);
+      await convexChat
+        .updateCallStatus({ callId: incomingCall.session.id, status: 'declined' })
+        .catch(() => {});
     }
-    setIncomingCall(null);
   };
 
   const answer = () => {
     stopRingtone();
     if (incomingCall) {
+      setDismissedIds((prev) => [...prev, incomingCall.session.id]);
       onAnswer(incomingCall.session, incomingCall.conv);
-      setIncomingCall(null);
     }
   };
 
