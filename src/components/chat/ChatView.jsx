@@ -151,12 +151,12 @@ export default function ChatView({
             {showMoreMenu && (
               <div className="absolute right-0 top-full mt-1 z-30 rounded-2xl border shadow-xl overflow-hidden"
                 style={{ background: 'var(--surface-bg)', borderColor: 'var(--surface-border)', minWidth: 160 }}>
-                <button onClick={() => { setShowMoreMenu(false); alert('Reported. We will review this conversation.'); }}
-                  className="w-full px-4 py-3 text-sm text-left hover:bg-black/5 transition-colors" style={{ color: 'var(--foreground)' }}>
+                <button onClick={handleReport} disabled={moderating}
+                  className="w-full px-4 py-3 text-sm text-left hover:bg-black/5 transition-colors disabled:opacity-50" style={{ color: 'var(--foreground)' }}>
                   Report conversation
                 </button>
-                <button onClick={() => { setShowMoreMenu(false); alert('Contact blocked.'); }}
-                  className="w-full px-4 py-3 text-sm text-left hover:bg-red-50 transition-colors text-red-500">
+                <button onClick={handleBlock} disabled={moderating || !otherParticipantId}
+                  className="w-full px-4 py-3 text-sm text-left hover:bg-red-50 transition-colors text-red-500 disabled:opacity-50">
                   Block contact
                 </button>
               </div>
