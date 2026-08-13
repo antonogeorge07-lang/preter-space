@@ -21,8 +21,11 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
   const longPressTimer = useRef(null);
 
   const isMe = message.sender === 'me';
-  const hasTranslation = message.translated_content && message.content !== message.translated_content;
-  const displayText = hasTranslation && !showOriginal ? message.translated_content : message.content;
+  const isSender = message.sender_id === currentUserId;
+  const displayLanguage = preferredLang || 'en';
+  const translatedText = message.translations?.[displayLanguage] || message.translated_content;
+  const hasTranslation = !!translatedText && translatedText !== message.content;
+  const displayText = isSender || showOriginal ? message.content : (translatedText || message.content);
 
   const reactions = (() => {
     try { return JSON.parse(message.reactions || '{}'); } catch { return {}; }
