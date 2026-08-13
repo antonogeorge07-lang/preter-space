@@ -17,7 +17,7 @@ import {
 
 const SKIP = 'skip';
 
-/** Convex identifies people by email — keep the mirror row fresh. */
+/** Convex identifies people by email - keep the mirror row fresh. */
 export function useChatIdentity(currentUser) {
   const key = userKey(currentUser);
   const upsertUser = useConvexMutation(convexApi.users.createOrUpdateUser);
@@ -64,7 +64,7 @@ export function useChatConversations(key) {
   return { conversations, loaded: docs !== undefined };
 }
 
-/** Page size for chat history — first paint loads only this many messages. */
+/** Page size for chat history - first paint loads only this many messages. */
 export const MESSAGE_PAGE_SIZE = 40;
 
 /**
@@ -91,7 +91,7 @@ export function useChatMessages(conversationId, { blockedUserIds = [] } = {}) {
     conversationId ? { conversationId } : SKIP,
   );
 
-  // Convex returns `undefined` while a wider window loads — keep showing the
+  // Convex returns `undefined` while a wider window loads - keep showing the
   // previous page so growing the window never blanks the thread.
   const lastPageRef = useRef(null);
   const lastConversationRef = useRef(conversationId);

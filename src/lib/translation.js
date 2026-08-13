@@ -50,7 +50,7 @@ export async function detectAndTranslate(text, targetLangCode) {
     model: 'gemini_3_flash',
     prompt: `Detect the ISO 639-1 language code of this text and translate it to language code "${targetLangCode}".
 If the text is already in "${targetLangCode}", set translation to the exact same text.
-Respond with a valid JSON object only — no markdown, no extra text:
+Respond with a valid JSON object only - no markdown, no extra text:
 {"detected": "<iso639-1 code>", "translation": "<translated text>"}
 
 Text: ${JSON.stringify(text)}`,

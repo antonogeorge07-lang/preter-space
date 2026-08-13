@@ -4,7 +4,7 @@
  * The app registers a service worker (installable PWA + notification display)
  * and shows local notifications for incoming messages when the tab isn't the
  * active one. Server-sent background push (VAPID) is not enabled, so there is
- * no dead backend call here — notifications are delivered by the client while
+ * no dead backend call here - notifications are delivered by the client while
  * a Preter tab is open.
  */
 
@@ -49,6 +49,6 @@ export function notifyIfHidden({ title = 'Preter', body, url = '/' }) {
     const n = new Notification(title, options);
     n.onclick = () => { window.focus(); window.location.href = url; n.close(); };
   } catch {
-    // Notification constructor unsupported (e.g. Android Chrome) — ignore.
+    // Notification constructor unsupported (e.g. Android Chrome) - ignore.
   }
 }

@@ -288,7 +288,7 @@ export default function MorningSummary({ conversations, currentUser, onSelectCon
         )}
       </div>
 
-      {/* Action bar — fixed inside this panel */}
+      {/* Action bar - fixed inside this panel */}
       <div style={{
         position: 'sticky',
         bottom: 0,

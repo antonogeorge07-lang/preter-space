@@ -230,7 +230,7 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
           className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
           style={{ background: isVideo ? 'black' : 'rgba(0,0,0,0.65)', backdropFilter: isVideo ? 'none' : 'blur(12px)' }}
         >
-          {/* Video call — full screen remote video */}
+          {/* Video call - full screen remote video */}
           {isVideo && (
             <video
               ref={remoteVideoRef}
@@ -267,7 +267,7 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
               : { background: 'linear-gradient(135deg, rgba(79,70,229,0.92), rgba(99,102,241,0.92))', backdropFilter: 'blur(40px)', border: '1px solid rgba(255,255,255,0.18)' }
             }
           >
-            {/* Avatar — only shown for audio */}
+            {/* Avatar - only shown for audio */}
             {!isVideo && (
               <>
                 <div className={`w-24 h-24 rounded-3xl bg-white/20 flex items-center justify-center text-5xl shadow-inner ${callState === 'ringing' && !isCaller ? 'animate-bounce' : ''}`}>
@@ -304,7 +304,7 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
             {/* Controls */}
             <div className="flex items-center gap-4 mt-1">
               {callState === 'ringing' && !isCaller ? (
-                // Incoming — show decline + answer
+                // Incoming - show decline + answer
                 <>
                   <div className="flex flex-col items-center gap-1">
                     <motion.button whileTap={{ scale: 0.9 }} onClick={handleDecline}
@@ -362,7 +362,7 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
             </div>
           </motion.div>
 
-          {/* Live caption overlay — shown when connected */}
+          {/* Live caption overlay - shown when connected */}
           {callState === 'connected' && captions.length > 0 && (
             <LiveCaptionOverlay captions={captions} />
           )}

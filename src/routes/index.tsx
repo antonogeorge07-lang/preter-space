@@ -5,13 +5,13 @@ import Forge from "@/pages/Forge";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Preter — Chat across every language" },
+      { title: "Preter: Chat across every language" },
       {
         name: "description",
         content:
           "Preter translates your conversations in real time, so you can chat, call, and share with anyone in their own language.",
       },
-      { property: "og:title", content: "Preter — Chat across every language" },
+      { property: "og:title", content: "Preter: Chat across every language" },
       {
         property: "og:description",
         content: "Real-time translated messaging, voice notes, and calls.",

@@ -397,7 +397,7 @@ export default function Landing() {
   };
 
   // The confirmation email contains a verification link (not a numeric code).
-  // Once the user taps it, a session appears — pick it up and continue onboarding.
+  // Once the user taps it, a session appears - pick it up and continue onboarding.
   useEffect(() => {
     if (!(mode === 'register' && step === 'otp')) return;
     let cancelled = false;
@@ -719,7 +719,7 @@ export default function Landing() {
       {/* ── Language Alignment Engine feature section ────────────────────── */}
       <LanguageAlignmentSection />
 
-      {/* ── Roadmap — expandable below the hero ────────────────────────────── */}
+      {/* ── Roadmap - expandable below the hero ────────────────────────────── */}
 
       <AnimatePresence>
         {showRoadmap && (

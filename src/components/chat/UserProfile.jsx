@@ -267,7 +267,7 @@ export default function UserProfile({ isOpen, onClose }) {
                   {user.active_sessions.map(s => {
                     const isMe = s.id === mySessionId;
                     const browser = s.userAgent?.match(/(Chrome|Firefox|Safari|Edge|Opera)/)?.[1] || 'Browser';
-                    const lastActive = s.lastActive ? new Date(s.lastActive).toLocaleString() : '—';
+                    const lastActive = s.lastActive ? new Date(s.lastActive).toLocaleString() : '-';
                     return (
                       <div key={s.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl"
                         style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
