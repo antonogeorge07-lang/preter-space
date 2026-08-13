@@ -18,6 +18,19 @@ export default defineSchema({
     creatorId: v.string(),
     participantIds: v.array(v.string()),
     lastMessageTime: v.optional(v.number()),
+    // --- UI metadata (mirrors the chat UI's conversation model) ---
+    avatarUrl: v.optional(v.string()),
+    participantNames: v.optional(v.array(v.string())),
+    participantLanguages: v.optional(v.any()),
+    preferredLanguage: v.optional(v.string()),
+    lastMessagePreview: v.optional(v.string()),
+    unreadCounts: v.optional(v.any()),
+    typingUserIds: v.optional(v.array(v.string())),
+    pinned: v.optional(v.boolean()),
+    archived: v.optional(v.boolean()),
+    muted: v.optional(v.boolean()),
+    inviteCode: v.optional(v.string()),
+    inviteOpen: v.optional(v.boolean()),
   }),
 
   messages: defineTable({
@@ -29,6 +42,10 @@ export default defineSchema({
     fileStorageId: v.optional(v.id("_storage")),
     replyToId: v.optional(v.id("messages")),
     createdAt: v.number(),
+    // --- UI metadata: sender name, media urls, message type, reply preview… ---
+    meta: v.optional(v.any()),
+    deleted: v.optional(v.boolean()),
+    edited: v.optional(v.boolean()),
   }).index("by_conversation", ["conversationId"]),
 
   conversation_reports: defineTable({
@@ -39,7 +56,7 @@ export default defineSchema({
     createdAt: v.number(),
   }),
 
-  // --- New: reactions ---
+  // --- reactions ---
   reactions: defineTable({
     messageId: v.id("messages"),
     userId: v.string(),
@@ -49,7 +66,7 @@ export default defineSchema({
     .index("by_message", ["messageId"])
     .index("by_message_user", ["messageId", "userId"]),
 
-  // --- New: read receipts ---
+  // --- read receipts ---
   read_receipts: defineTable({
     conversationId: v.id("conversations"),
     userId: v.string(),
@@ -59,7 +76,7 @@ export default defineSchema({
     .index("by_conversation", ["conversationId"])
     .index("by_conversation_user", ["conversationId", "userId"]),
 
-  // --- New: presence / typing ---
+  // --- presence / typing ---
   presence: defineTable({
     userId: v.string(),
     conversationId: v.optional(v.id("conversations")),
@@ -70,11 +87,13 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_conversation", ["conversationId"]),
 
-  // --- New: calls ---
+  // --- calls ---
   calls: defineTable({
     conversationId: v.optional(v.id("conversations")),
     callerId: v.string(),
     calleeId: v.string(),
+    callerName: v.optional(v.string()),
+    calleeName: v.optional(v.string()),
     status: v.string(), // ringing | accepted | declined | ended | missed
     isVideo: v.optional(v.boolean()),
     offer: v.optional(v.any()),

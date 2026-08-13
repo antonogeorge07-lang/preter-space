@@ -11,6 +11,27 @@ export const listForMessage = query({
   },
 });
 
+/** All reactions for every message in a conversation — one subscription per chat. */
+export const listForConversation = query({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, args) => {
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+      .collect();
+
+    const out = [];
+    for (const m of messages) {
+      const reactions = await ctx.db
+        .query("reactions")
+        .withIndex("by_message", (q) => q.eq("messageId", m._id))
+        .collect();
+      out.push(...reactions);
+    }
+    return out;
+  },
+});
+
 export const toggle = mutation({
   args: {
     messageId: v.id("messages"),

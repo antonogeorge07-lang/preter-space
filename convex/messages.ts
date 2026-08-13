@@ -21,6 +21,7 @@ export const send = mutation({
     audioStorageId: v.optional(v.id("_storage")),
     fileStorageId: v.optional(v.id("_storage")),
     replyToId: v.optional(v.id("messages")),
+    meta: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     const conversation = await ctx.db.get(args.conversationId);
@@ -32,7 +33,7 @@ export const send = mutation({
 
       const participant = await ctx.db
         .query("users")
-        .filter((q) => q.eq(q.field("email"), participantId))
+        .withIndex("by_email", (q) => q.eq("email", participantId))
         .first();
 
       if (participant?.blockedUsers?.includes(args.senderId)) {
@@ -48,11 +49,43 @@ export const send = mutation({
       audioStorageId: args.audioStorageId,
       fileStorageId: args.fileStorageId,
       replyToId: args.replyToId,
+      meta: args.meta,
       createdAt: Date.now(),
     });
 
     await ctx.db.patch(args.conversationId, { lastMessageTime: Date.now() });
 
     return messageId;
+  },
+});
+
+export const update = mutation({
+  args: {
+    messageId: v.id("messages"),
+    text: v.optional(v.string()),
+    translations: v.optional(v.any()),
+    meta: v.optional(v.any()),
+    deleted: v.optional(v.boolean()),
+    edited: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { messageId, ...patch } = args;
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v2]) => v2 !== undefined));
+    if (Object.keys(clean).length === 0) return messageId;
+    await ctx.db.patch(messageId, clean);
+    return messageId;
+  },
+});
+
+export const remove = mutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    const reactions = await ctx.db
+      .query("reactions")
+      .withIndex("by_message", (q) => q.eq("messageId", args.messageId))
+      .collect();
+    for (const r of reactions) await ctx.db.delete(r._id);
+    await ctx.db.delete(args.messageId);
+    return null;
   },
 });
