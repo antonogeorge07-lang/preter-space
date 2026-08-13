@@ -72,7 +72,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
       onTouchEnd={handleTouchEnd}
       className={`flex ${isMe ? 'justify-end' : 'justify-start'} px-4 sm:px-6 w-full group`}
     >
-      <div className={`max-w-[68%] sm:max-w-[60%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+      <div className={`min-w-0 max-w-[85%] sm:max-w-[72%] lg:max-w-[60%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
         {/* Reply preview */}
         {message.reply_to_id && (
           <div className={`mb-1.5 px-3 py-1.5 rounded-xl border-l-2 text-xs opacity-70 ${isMe ? 'border-primary' : 'border-primary/60'}`}
