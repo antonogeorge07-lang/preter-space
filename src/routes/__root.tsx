@@ -12,7 +12,9 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/lib/AuthContext";
+import { ConvexClientProvider } from "@/lib/convex";
 import { Toaster } from "@/components/ui/toaster";
+
 
 function NotFoundComponent() {
   return (
