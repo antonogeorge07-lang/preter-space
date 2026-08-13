@@ -147,7 +147,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
 
           {/* Bubble */}
           <div
-            className={`rounded-2xl px-4 py-3 ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+            className={`rounded-2xl px-4 py-3 min-w-0 max-w-full overflow-hidden ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
             style={{
               background: isMe ? 'var(--bubble-outgoing)' : 'var(--bubble-incoming)',
               border: '1px solid var(--card-border)',
