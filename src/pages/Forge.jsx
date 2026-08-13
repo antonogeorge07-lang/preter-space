@@ -187,6 +187,34 @@ export default function Forge() {
     [getParticipantLang, myKey],
   );
 
+  // Persist the handshake on the conversation so both sides (and any device)
+  // agree on which language each participant reads in.
+  useEffect(() => {
+    if (!chatId || !myKey || !activeConversation) return;
+    const stored = safeJson(activeConversation.participant_languages, {});
+    const next = { ...stored };
+    let changed = false;
+    for (const pid of activeConversation.participant_ids || []) {
+      const resolved =
+        pid === myKey
+          ? myLanguage || stored[pid]
+          : participantLanguages[pid] || stored[pid] || inferredLanguages[pid];
+      if (resolved && stored[pid] !== resolved) {
+        next[pid] = resolved;
+        changed = true;
+      }
+    }
+    if (changed) updateConversation(chatId, { participant_languages: next }).catch(() => {});
+  }, [
+    chatId,
+    myKey,
+    myLanguage,
+    activeConversation?.participant_languages,
+    activeConversation?.participant_ids,
+    participantLanguages,
+    inferredLanguages,
+  ]);
+
   // Clear my unread counter when opening a conversation
   useEffect(() => {
     if (!chatId || !myKey || !activeConversation) return;
