@@ -48,16 +48,24 @@ export default function UserProfile({ isOpen, onClose }) {
     await db.auth.updateMe({ default_language: defaultLang, phone, avatar_url: avatarUrl });
     // Propagate new language to all conversations the user is part of
     try {
-      const convs = await db.entities.Conversation.list('-updated_date', 200);
-      const updates = convs
-        .filter(c => (c.participant_ids || []).includes(user?.id))
-        .map(c => {
-          let langs = {};
-          try { langs = JSON.parse(c.participant_languages || '{}'); } catch {}
-          langs[user.id] = defaultLang;
-          return db.entities.Conversation.update(c.id, { participant_languages: JSON.stringify(langs) });
+      const myKey = user?.email;
+      if (myKey) {
+        await convexChat.upsertUser({
+          name: user?.full_name || myKey,
+          email: myKey,
+          language: defaultLang,
+          ...(avatarUrl ? { avatarUrl } : {}),
         });
-      await Promise.all(updates);
+        const convs = await convexChat.query(convexApi.conversations.getForUser, { userId: myKey });
+        await Promise.all(
+          (convs || []).map(c =>
+            convexChat.mutation(convexApi.conversations.update, {
+              conversationId: c._id,
+              participantLanguages: { ...(c.participantLanguages || {}), [myKey]: defaultLang },
+            }),
+          ),
+        );
+      }
     } catch {}
     setSaving(false);
     setSaved(true);

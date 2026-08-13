@@ -58,16 +58,17 @@ export default function OnboardingModal({ isOpen, onComplete, currentUser }) {
     setSharing(true);
     try {
       const code = generateInviteCode();
-      const conv = await db.entities.Conversation.create({
-        participant_name: currentUser.full_name || currentUser.email,
-        participant_ids: [currentUser.id],
-        participant_names: [currentUser.full_name || currentUser.email],
-        preferred_language: selectedLang,
-        participant_languages: JSON.stringify({ [currentUser.id]: selectedLang }),
-        invite_code: code,
-        invite_open: true,
-        unread_counts: '{}',
-        is_group: false,
+      await convexChat.createConversation({
+        isGroup: false,
+        creatorId: currentUser.id,
+        participantIds: [currentUser.id],
+        title: currentUser.full_name || currentUser.email,
+        participantNames: [currentUser.full_name || currentUser.email],
+        participantLanguages: { [currentUser.id]: selectedLang },
+        preferredLanguage: selectedLang,
+        inviteCode: code,
+        inviteOpen: true,
+        unreadCounts: {},
       });
       const url = getInviteUrl(code);
       const text = `I'm on Preter. It translates every message in real-time so we can chat in our own languages. Join me here: ${url}`;
