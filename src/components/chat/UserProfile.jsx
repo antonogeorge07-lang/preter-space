@@ -8,6 +8,9 @@ import { Link } from '@/lib/router-compat';
 import { LANG_MAP } from '@/lib/translation';
 import { getOrCreateDeviceSessionId, forceKillRemoteSession } from '@/lib/deviceSession';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useServerFn } from '@tanstack/react-start';
+import { deleteAccount } from '@/lib/account.functions';
+import { toast } from '@/components/ui/use-toast';
 
 const LANG_OPTIONS = Object.entries(LANG_MAP)
   .map(([code, name]) => ({ code, name }))
@@ -26,6 +29,8 @@ export default function UserProfile({ isOpen, onClose }) {
   const [killingSession, setKillingSession] = useState(null);
   const fileInputRef = useRef(null);
   const mySessionId = getOrCreateDeviceSessionId();
+  const [deleting, setDeleting] = useState(false);
+  const callDeleteAccount = useServerFn(deleteAccount);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,8 +65,15 @@ export default function UserProfile({ isOpen, onClose }) {
   };
 
   const handleDeleteAccount = async () => {
-    // Sign out — account deletion requires backend support
-    await db.auth.logout('/');
+    setDeleting(true);
+    try {
+      await callDeleteAccount({});
+      toast({ title: 'Account deleted', description: 'Your account and messages have been removed.' });
+      await db.auth.logout('/');
+    } catch {
+      setDeleting(false);
+      toast({ title: 'Could not delete account', description: 'Please try again in a moment.', variant: 'destructive' });
+    }
   };
 
   const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
