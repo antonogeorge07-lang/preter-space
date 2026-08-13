@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { convexChat } from '@/lib/convexChat';
+import { convexApi } from '@/lib/convexApi';
 
 
 import { useEffect, useState } from 'react';
@@ -87,15 +88,12 @@ export default function JoinConversation() {
         return;
       }
 
-      await convexChat.mutation(
-        (await import('@/lib/convexApi')).convexApi.conversations.update,
-        {
+      await convexChat.mutation(convexApi.conversations.update, {
           conversationId: conv._id,
           participantIds: [...(conv.participantIds || []), myKey],
           participantNames: [...(conv.participantNames || []), currentUser?.full_name || myKey],
-          participantLanguages: { ...(conv.participantLanguages || {}), [myKey]: chosenLang },
-        },
-      );
+        participantLanguages: { ...(conv.participantLanguages || {}), [myKey]: chosenLang },
+      });
 
       try { localStorage.setItem('vl_onboarded', '1'); } catch {}
       setStep('joined');
