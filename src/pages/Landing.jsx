@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, Shield, Sparkles, Eye, EyeOff, Share2, MessageSquare,
