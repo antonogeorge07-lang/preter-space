@@ -203,6 +203,14 @@ export default function Forge() {
         ? getParticipantLang(activeConversation, recipientIds[0])
         : getMyLang(activeConversation);
 
+      // Every distinct target language among recipients
+      const targetLangs = [...new Set(
+        (recipientIds.length > 0
+          ? recipientIds.map((pid) => getParticipantLang(activeConversation, pid))
+          : [getMyLang(activeConversation)]
+        ).filter(Boolean),
+      )];
+
       const meta = {
         senderName: currentUser?.full_name || myKey,
         type: 'text',
@@ -226,9 +234,30 @@ export default function Forge() {
         return;
       }
 
-      let messageId;
+      // Translate BEFORE inserting so the stored message already carries the
+      // recipients' languages — no untranslated flash on their side.
+      const translations = {};
+      let originalLang = '';
       try {
-        messageId = await sendConvexMessage(payload);
+        const results = await Promise.all(
+          targetLangs.map(async (lang) => ({ lang, ...(await detectAndTranslate(text, lang)) })),
+        );
+        results.forEach(({ lang, translatedText, detectedLang }) => {
+          if (translatedText) translations[lang] = translatedText;
+          if (!originalLang && detectedLang) originalLang = detectedLang;
+        });
+      } catch {
+        // Translation unavailable — send the original text through anyway.
+      }
+
+      const primaryTranslation = translations[recipientLang] || text;
+      if (Object.keys(translations).length > 0) {
+        payload.translations = translations;
+        payload.meta = { ...meta, translatedContent: primaryTranslation, originalLanguage: originalLang };
+      }
+
+      try {
+        await sendConvexMessage(payload);
       } catch (err) {
         const blocked = /blocked/i.test(err?.message || '');
         toast({
@@ -246,24 +275,12 @@ export default function Forge() {
       const counts = safeJson(activeConversation.unread_counts, {});
       recipientIds.forEach((pid) => { counts[pid] = (counts[pid] || 0) + 1; });
       await updateConversation(activeConversation.id, {
-        last_message_preview: text,
+        last_message_preview: primaryTranslation,
         last_message_time: Date.now(),
         unread_counts: counts,
       }).catch(() => {});
 
       setIsProcessing(false);
-
-      // Translate for the recipient
-      const { translatedText: translated, detectedLang: originalLang } = await detectAndTranslate(text, recipientLang);
-      await updateMessage({
-        messageId,
-        translations: { [recipientLang]: translated },
-        meta: { ...meta, translatedContent: translated, originalLanguage: originalLang },
-      }).catch(() => {});
-
-      if (translated !== text) {
-        await updateConversation(activeConversation.id, { last_message_preview: translated }).catch(() => {});
-      }
     },
     [activeConversation, myKey, currentUser, replyTo, blockedUserIds, isProcessing, getMyLang, getParticipantLang, sendConvexMessage, updateMessage, updateConversation, setTyping],
   );
