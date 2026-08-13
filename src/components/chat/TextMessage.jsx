@@ -82,7 +82,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
           </div>
         )}
 
-        <div className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'} relative`}>
+        <div className={`flex items-end gap-2 min-w-0 max-w-full ${isMe ? 'flex-row-reverse' : 'flex-row'} relative`}>
           {/* Hover action buttons */}
           <AnimatePresence>
             {showActions && (
