@@ -356,14 +356,17 @@ export default function Forge() {
 
   const handleLanguageChange = useCallback(
     async (langCode) => {
-      if (!activeConversation || !myKey) return;
+      if (!myKey) return;
+      // Persist on the account first so it applies everywhere, then on the thread.
+      await saveUserLanguage(langCode, authUser).catch(() => {});
+      if (!activeConversation) return;
       const langs = safeJson(activeConversation.participant_languages, {});
       await updateConversation(activeConversation.id, {
         participant_languages: { ...langs, [myKey]: langCode },
         preferred_language: langCode,
       });
     },
-    [activeConversation, myKey, updateConversation],
+    [activeConversation, authUser, myKey, updateConversation],
   );
 
   const handleImageSend = useCallback(
