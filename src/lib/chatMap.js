@@ -97,6 +97,7 @@ export function toUiMessage(doc, reactionsByMessage, readBy) {
     sender_name: meta.senderName || doc.senderId,
     content: doc.text || '',
     translated_content: meta.translatedContent || '',
+    translations: doc.translations || {},
     original_language: meta.originalLanguage || '',
     target_language: meta.targetLanguage || '',
     type: meta.type || 'text',
