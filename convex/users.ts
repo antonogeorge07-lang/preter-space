@@ -124,3 +124,23 @@ export const deleteAccount = mutation({
     return null;
   },
 });
+
+/**
+ * Language preferences for a set of accounts, keyed by email.
+ * The user document is the source of truth for "which language do I read in",
+ * so message translation targets stay correct even if a conversation row is stale.
+ */
+export const languagesByEmail = query({
+  args: { emails: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const out: Record<string, string> = {};
+    for (const email of args.emails) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .unique();
+      if (user?.language) out[email] = user.language;
+    }
+    return out;
+  },
+});
