@@ -72,45 +72,22 @@ export default function JoinConversation() {
     setStep('joining');
     const chosenLang = userLangCode || lang.code;
     try {
-      const me = await db.auth.me();
-      // Save chosen language first so any backend join picks it up
+      // Save chosen language first so the server join picks it up
       try { await db.auth.updateMe({ default_language: chosenLang }); } catch {}
 
-      let convId = null;
+      const res = await joinByInviteCode({ data: { code, language: chosenLang } });
+      if (res?.error || !res?.conversation_id) { setStep('error'); return; }
 
-      // Preferred path: secure backend function (requires Builder+ plan)
-      try {
-        const res = await db.functions.invoke('validateInviteCode', { code });
-        if (res?.data?.already_member && res?.data?.conversation_id) {
-          setStep('already');
-          setTimeout(() => navigate(`/chat/${res.data.conversation_id}`), 800);
-          return;
-        }
-        if (res?.data?.conversation_id) convId = res.data.conversation_id;
-        if (res?.data?.error) throw new Error(res.data.error);
-      } catch {
-        // Fallback: client-side self-add via the open-invite permission
-        await db.entities.Conversation.updateMany(
-          { invite_code: code, invite_open: true },
-          { $addToSet: { participant_ids: me.id } }
-        );
-        const results = await db.entities.Conversation.filter({ invite_code: code });
-        if (!results || results.length === 0) { setStep('error'); return; }
-        const conv = results[0];
-        convId = conv.id;
-        let langs = {};
-        try { langs = JSON.parse(conv.participant_languages || '{}'); } catch {}
-        langs[me.id] = chosenLang;
-        await db.entities.Conversation.update(conv.id, {
-          participant_languages: JSON.stringify(langs),
-          participant_names: [...(conv.participant_names || []), me.full_name || me.email],
-        });
+      if (res.already_member) {
+        setStep('already');
+        setTimeout(() => navigate(`/chat/${res.conversation_id}`), 800);
+        return;
       }
 
-      if (!convId) { setStep('error'); return; }
       try { localStorage.setItem('vl_onboarded', '1'); } catch {}
       setStep('joined');
-      setTimeout(() => navigate(`/chat/${convId}`), 900);
+      setTimeout(() => navigate(`/chat/${res.conversation_id}`), 900);
+
     } catch {
       setStep('error');
     }
