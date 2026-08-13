@@ -1,4 +1,6 @@
 import { db } from '@/lib/db';
+import { convexChat } from '@/lib/convexChat';
+import { convexApi } from '@/lib/convexApi';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
