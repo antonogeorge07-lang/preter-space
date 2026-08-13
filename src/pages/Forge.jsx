@@ -76,7 +76,8 @@ export default function Forge() {
   const activeConversation = chatId ? myConversations.find((c) => c.id === chatId) || null : null;
 
   // ── Live messages / reactions / read receipts ────────────────────────────
-  const { messages, messageDocs } = useChatMessages(chatId, { blockedUserIds });
+  const { messages, messageDocs, hasMore: hasMoreMessages, loadingOlder, loadOlder } =
+    useChatMessages(chatId, { blockedUserIds });
   useReadReceipts({ conversationId: chatId, key: myKey, messageDocs });
 
   // ── Live presence + typing ───────────────────────────────────────────────
@@ -491,6 +492,9 @@ export default function Forge() {
             othersTyping={othersTyping}
             onReaction={handleReaction}
             contactPresence={contactPresence}
+            hasMoreMessages={hasMoreMessages}
+            loadingOlder={loadingOlder}
+            onLoadOlder={loadOlder}
           />
         ) : (
           <MorningSummary
