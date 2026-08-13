@@ -20,6 +20,7 @@ export const send = mutation({
     translations: v.optional(v.any()),
     audioStorageId: v.optional(v.id("_storage")),
     fileStorageId: v.optional(v.id("_storage")),
+    replyToId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
     const conversation = await ctx.db.get(args.conversationId);
@@ -46,6 +47,7 @@ export const send = mutation({
       translations: args.translations,
       audioStorageId: args.audioStorageId,
       fileStorageId: args.fileStorageId,
+      replyToId: args.replyToId,
       createdAt: Date.now(),
     });
 
