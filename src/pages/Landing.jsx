@@ -183,7 +183,144 @@ function RoadmapSection() {
   );
 }
 
+// ── Language Alignment Engine section ───────────────────────────────────────
+
+function LanguageAlignmentSection() {
+  const highlights = [
+    {
+      icon: <Languages className="w-4 h-4" />,
+      title: 'Dynamic Language Handshake',
+      detail: 'Automatically detects and matches your contact\'s preferred language for every conversation thread.',
+    },
+    {
+      icon: <Mic className="w-4 h-4" />,
+      title: 'Dual-Language Audio Stream',
+      detail: 'Record a voice note in your native tongue; your recipient can listen or read the transcribed translation instantly.',
+    },
+    {
+      icon: <Eye className="w-4 h-4" />,
+      title: 'Original Text Peek',
+      detail: 'Flip between the translated message and the original source text with a single tap.',
+    },
+  ];
+
+  return (
+    <section className="relative z-10 w-full px-6 py-16 sm:py-20 lg:py-24" style={{ borderTop: '1px solid var(--surface-border)' }}>
+      <div className="max-w-6xl mx-auto">
+        {/* Section label */}
+        <p className="text-[11px] font-semibold uppercase tracking-widest mb-4 text-center" style={{ color: 'var(--muted)' }}>
+          Language Alignment Engine
+        </p>
+
+        {/* Headline */}
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-center mb-4 font-heading" style={{ color: 'var(--foreground)' }}>
+          Talk in Your Language. They Read in Theirs.
+        </h2>
+
+        {/* Subheadline */}
+        <p className="text-sm sm:text-base leading-relaxed text-center max-w-2xl mx-auto mb-12" style={{ color: 'var(--muted)' }}>
+          Zero copy-pasting, zero app switching. Type or speak in your native language, and Preter AI instantly translates and delivers it in your recipient's target language in real time.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          {/* Feature highlights */}
+          <div className="flex flex-col gap-4 order-2 lg:order-1">
+            {highlights.map((h, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl"
+                style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
+              >
+                <div className="mt-0.5 p-2 rounded-xl flex-shrink-0" style={{ background: 'var(--accent-pink)', color: 'var(--primary)' }}>
+                  {h.icon}
+                </div>
+                <div>
+                  <p className="text-sm sm:text-base font-semibold mb-1" style={{ color: 'var(--foreground)' }}>{h.title}</p>
+                  <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>{h.detail}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Visual card preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="order-1 lg:order-2 w-full max-w-md mx-auto lg:max-w-none"
+          >
+            <div className="rounded-3xl p-5 sm:p-6 shadow-xl"
+              style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'var(--accent-pink)' }}>
+                    <Globe className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>Product Launch</p>
+                    <p className="text-[10px]" style={{ color: 'var(--muted)' }}>English · Spanish</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium"
+                  style={{ background: 'var(--surface-bg)', color: 'var(--muted)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  Live
+                </div>
+              </div>
+
+              {/* Chat bubbles */}
+              <div className="flex flex-col gap-4 mb-5">
+                {/* Sender bubble - left */}
+                <div className="flex flex-col items-start gap-1">
+                  <span className="text-[10px] font-medium" style={{ color: 'var(--muted)' }}>You · 🇬🇧 EN</span>
+                  <div className="max-w-[85%] sm:max-w-[80%] rounded-2xl rounded-tl-md px-4 py-3"
+                    style={{ background: 'var(--bubble-outgoing)', border: '1px solid var(--card-border)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
+                      Hey! Let&apos;s sync on the release today.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Recipient bubble - right */}
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[10px] font-medium" style={{ color: 'var(--muted)' }}>María · 🇪🇸 ES</span>
+                  <div className="max-w-[85%] sm:max-w-[80%] rounded-2xl rounded-tr-md px-4 py-3"
+                    style={{ background: 'var(--bubble-incoming)', border: '1px solid var(--card-border)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
+                      ¡Hola! Sincronicemos sobre el lanzamiento hoy.
+                    </p>
+                    <p className="text-[10px] mt-1.5 flex items-center gap-1" style={{ color: 'var(--muted)' }}>
+                      <Languages className="w-3 h-3" />
+                      Hey! Let&apos;s sync on the release today.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Latency badge */}
+              <div className="flex items-center justify-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] sm:text-[11px] font-medium"
+                  style={{ background: 'var(--accent-pink)', color: 'var(--primary)' }}>
+                  <Zap className="w-3 h-3" />
+                  Live Alignment Active · 100ms Latency
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Auth card ────────────────────────────────────────────────────────────────
+
 
 function AuthCard({ children }) {
   return (
@@ -571,7 +708,11 @@ export default function Landing() {
         </div>
       </div>
 
+      {/* ── Language Alignment Engine feature section ────────────────────── */}
+      <LanguageAlignmentSection />
+
       {/* ── Roadmap — expandable below the hero ────────────────────────────── */}
+
       <AnimatePresence>
         {showRoadmap && (
           <motion.div
