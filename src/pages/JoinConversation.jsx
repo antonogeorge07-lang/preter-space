@@ -1,3 +1,4 @@
+import { saveUserLanguage } from '@/lib/saveUserLanguage';
 import { db } from '@/lib/db';
 import { convexChat } from '@/lib/convexChat';
 import { convexApi } from '@/lib/convexApi';
@@ -76,7 +77,7 @@ export default function JoinConversation() {
     const chosenLang = userLangCode || lang.code;
     try {
       // Save chosen language first so the server join picks it up
-      try { await db.auth.updateMe({ default_language: chosenLang }); } catch {}
+      await saveUserLanguage(chosenLang, currentUser);
 
       const conv = await convexChat.getConversationByInvite(code);
       const myKey = currentUser?.email;
