@@ -19,6 +19,28 @@ export const Route = createFileRoute("/landing")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://preter.space/landing" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Preter",
+          url: "https://preter.space",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Preter",
+          url: "https://preter.space",
+          logo: "https://preter.space/favicon.ico",
+        }),
+      },
+    ],
   }),
   component: () => (
     <GuestGate>
