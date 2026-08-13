@@ -250,18 +250,34 @@ export default function Landing() {
     } finally { setLoading(false); }
   };
 
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    if (!otp.trim()) return;
-    setLoading(true); setError('');
+  // The confirmation email contains a verification link (not a numeric code).
+  // Once the user taps it, a session appears — pick it up and continue onboarding.
+  useEffect(() => {
+    if (!(mode === 'register' && step === 'otp')) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        if (await db.auth.isAuthenticated()) {
+          if (!cancelled) setStep('language');
+        }
+      } catch {}
+    };
+    const id = setInterval(tick, 2500);
+    tick();
+    return () => { cancelled = true; clearInterval(id); };
+  }, [mode, step]);
+
+  const handleResendLink = async () => {
+    setError('');
+    setLoading(true);
     try {
-      const result = await db.auth.verifyOtp({ email: contact.trim(), otpCode: otp.trim() });
-      await db.auth.setToken(result.access_token);
-      setStep('language');
+      await db.auth.resendOtp(contact.trim());
+      setError('');
     } catch {
-      setError('Invalid code. Check and try again.');
+      setError('Could not resend the email. Please try again.');
     } finally { setLoading(false); }
   };
+
 
   const handleLanguageDone = async () => {
     setLoading(true);
