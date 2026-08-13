@@ -38,6 +38,7 @@ export const convexApi = {
         translations?: Record<string, string>;
         audioStorageId?: string;
         fileStorageId?: string;
+        replyToId?: string;
       },
       string
     >("messages:send"),
@@ -172,5 +173,6 @@ export interface ConvexMessage {
   translations?: Record<string, string>;
   audioStorageId?: string;
   fileStorageId?: string;
+  replyToId?: string;
   createdAt: number;
 }
