@@ -25,7 +25,8 @@ export const AuthProvider = ({ children }) => {
             .upsertUser({
               name: u.full_name || u.email,
               email: u.email,
-              language: u.default_language || 'en',
+              // Never overwrite a chosen language with the "en" fallback.
+              ...(u.language_set && u.default_language ? { language: u.default_language } : {}),
               ...(u.avatar_url ? { avatarUrl: u.avatar_url } : {}),
             })
             .catch(() => {});
