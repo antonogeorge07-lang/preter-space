@@ -11,6 +11,23 @@ export const getByEmail = query({
   },
 });
 
+/** Directory search by display name or email (case-insensitive substring). */
+export const search = query({
+  args: { term: v.string(), excludeEmail: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const term = args.term.trim().toLowerCase();
+    if (term.length < 2) return [];
+    const all = await ctx.db.query("users").take(500);
+    return all
+      .filter((u) => u.email !== args.excludeEmail)
+      .filter(
+        (u) =>
+          (u.name || "").toLowerCase().includes(term) || u.email.toLowerCase().includes(term),
+      )
+      .slice(0, 20);
+  },
+});
+
 export const createOrUpdateUser = mutation({
   args: {
     name: v.string(),
@@ -67,23 +84,43 @@ export const toggleBlockUser = mutation({
   },
 });
 
+/** Block/unblock using emails, which is how participants are identified. */
+export const toggleBlockByEmail = mutation({
+  args: { email: v.string(), targetEmail: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const currentBlocked = user.blockedUsers || [];
+    const isBlocked = currentBlocked.includes(args.targetEmail);
+    await ctx.db.patch(user._id, {
+      blockedUsers: isBlocked
+        ? currentBlocked.filter((id) => id !== args.targetEmail)
+        : [...currentBlocked, args.targetEmail],
+    });
+    return !isBlocked;
+  },
+});
+
 export const deleteAccount = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    if (!user) return;
+    if (!user) return null;
 
-    // Remove user messages
     const userMessages = await ctx.db
       .query("messages")
-      .filter((q) => q.eq(q.field("senderId"), args.userId))
+      .filter((q) => q.eq(q.field("senderId"), user.email))
       .collect();
 
     for (const msg of userMessages) {
       await ctx.db.delete(msg._id);
     }
 
-    // Delete user profile
     await ctx.db.delete(args.userId);
+    return null;
   },
 });

@@ -46,17 +46,12 @@ export const create = mutation({
   args: {
     isGroup: v.boolean(),
     creatorId: v.string(),
-    participantIds: v.array(v.string()),
     ...uiFields,
-    participantIds_unused: v.optional(v.null()),
+    participantIds: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const { participantIds_unused: _ignored, ...rest } = args;
     return await ctx.db.insert("conversations", {
-      ...rest,
-      participantIds: args.participantIds,
-      isGroup: args.isGroup,
-      creatorId: args.creatorId,
+      ...args,
       lastMessageTime: args.lastMessageTime ?? Date.now(),
     });
   },
