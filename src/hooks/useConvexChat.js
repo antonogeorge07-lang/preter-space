@@ -2,7 +2,7 @@
  * Reactive chat data layer, backed entirely by Convex.
  * Everything here is a live subscription (`useQuery`) or a `useMutation`.
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConvexQuery, useConvexMutation } from '@/lib/convex';
 import { convexApi } from '@/lib/convexApi';
 import {
@@ -50,23 +50,70 @@ export function useChatConversations(key) {
   return { conversations, loaded: docs !== undefined };
 }
 
-/** Live messages + reactions + read receipts for one conversation. */
+/** Page size for chat history — first paint loads only this many messages. */
+export const MESSAGE_PAGE_SIZE = 40;
+
+/**
+ * Live messages + reactions + read receipts for one conversation.
+ * Only the newest `MESSAGE_PAGE_SIZE` messages are subscribed initially;
+ * `loadOlder()` grows the live window one page at a time (infinite scroll).
+ */
 export function useChatMessages(conversationId, { blockedUserIds = [] } = {}) {
-  const args = conversationId ? { conversationId } : SKIP;
-  const messageDocs = useConvexQuery(convexApi.messages.list, args);
-  const reactionDocs = useConvexQuery(convexApi.reactions.listForConversation, args);
-  const receiptDocs = useConvexQuery(convexApi.readReceipts.listForConversation, args);
+  const [limit, setLimit] = useState(MESSAGE_PAGE_SIZE);
+
+  // Reset the window whenever the user switches conversations.
+  useEffect(() => {
+    setLimit(MESSAGE_PAGE_SIZE);
+  }, [conversationId]);
+
+  const page = useConvexQuery(
+    convexApi.messages.listPage,
+    conversationId ? { conversationId, limit } : SKIP,
+  );
+  const reactionArgs = conversationId ? { conversationId, limit } : SKIP;
+  const reactionDocs = useConvexQuery(convexApi.reactions.listForConversation, reactionArgs);
+  const receiptDocs = useConvexQuery(
+    convexApi.readReceipts.listForConversation,
+    conversationId ? { conversationId } : SKIP,
+  );
+
+  // Convex returns `undefined` while a wider window loads — keep showing the
+  // previous page so growing the window never blanks the thread.
+  const lastPageRef = useRef(null);
+  const lastConversationRef = useRef(conversationId);
+  if (lastConversationRef.current !== conversationId) {
+    lastConversationRef.current = conversationId;
+    lastPageRef.current = null;
+  }
+  if (page !== undefined) lastPageRef.current = page;
+  const view = page ?? lastPageRef.current;
+
+  const messageDocs = view?.messages || [];
+  const hasMore = !!view?.hasMore;
+  const loadingOlder = page === undefined && !!lastPageRef.current;
 
   const messages = useMemo(() => {
-    const docs = messageDocs || [];
+    const docs = view?.messages || [];
     const reactions = groupReactions(reactionDocs || []);
     const readBy = deriveReadBy(docs, receiptDocs || []);
     return docs
       .filter((d) => !blockedUserIds.includes(d.senderId))
       .map((d) => toUiMessage(d, reactions, readBy));
-  }, [messageDocs, reactionDocs, receiptDocs, blockedUserIds.join(',')]);
+  }, [view, reactionDocs, receiptDocs, blockedUserIds.join(',')]);
 
-  return { messages, messageDocs: messageDocs || [], loaded: messageDocs !== undefined };
+  const loadOlder = useCallback(() => {
+    if (!hasMore || page === undefined) return;
+    setLimit((prev) => prev + MESSAGE_PAGE_SIZE);
+  }, [hasMore, page === undefined]);
+
+  return {
+    messages,
+    messageDocs,
+    loaded: view !== null && view !== undefined,
+    hasMore,
+    loadingOlder,
+    loadOlder,
+  };
 }
 
 /** Presence for a conversation: my heartbeat out, typing + last-seen in. */

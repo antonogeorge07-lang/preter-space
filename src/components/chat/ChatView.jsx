@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Globe, Images, Phone, Video, Search, X, MoreVertical, Users } from 'lucide-react';
+import { ArrowLeft, Globe, Images, Phone, Video, Search, X, MoreVertical, Users, Loader2 } from 'lucide-react';
 import TextMessage from '@/components/chat/TextMessage';
 import SwipeableMessage from '@/components/chat/SwipeableMessage';
 import VoiceNoteBubble from '@/components/chat/VoiceNoteBubble';
@@ -30,8 +30,13 @@ export default function ChatView({
   onSendMessage, onTyping, onStartRecording, onStartVideo, onImageSend, onFileSend,
   isProcessing, onBack, onLanguageChange, onDeleteMessage, onEditMessage, onStartCall,
   replyTo, onSetReplyTo, onCancelReply, othersTyping = [], onReaction, contactPresence,
+  hasMoreMessages = false, loadingOlder = false, onLoadOlder,
 }) {
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const topSentinelRef = useRef(null);
+  const pendingOlderHeightRef = useRef(null);
+  const lastBottomIdRef = useRef(null);
   const [langSettingsOpen, setLangSettingsOpen] = useState(false);
   const [showSmartReplies, setShowSmartReplies] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -91,9 +96,52 @@ export default function ChatView({
   const preferredLang = myLang || conversation?.preferred_language || 'en';
   const smartRepliesVisible = showSmartReplies && messages.length > 0 && !isProcessing;
 
+  // Load older history when the top of the thread comes into view.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const sentinel = topSentinelRef.current;
+    const container = scrollContainerRef.current;
+    if (!sentinel || !container || !hasMoreMessages || loadingOlder || !onLoadOlder) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        // Remember the height so the viewport can stay anchored after prepending.
+        pendingOlderHeightRef.current = container.scrollHeight;
+        onLoadOlder();
+      },
+      { root: container, rootMargin: '200px 0px 0px 0px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreMessages, loadingOlder, onLoadOlder, conversation?.id]);
+
+  // Stick to the newest message, but keep the reading position when older
+  // messages are prepended above the current view.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    const bottomId = messages.length ? messages[messages.length - 1].id : null;
+    const isNewConversation = lastBottomIdRef.current === null;
+    const bottomChanged = bottomId !== lastBottomIdRef.current;
+
+    if (container && pendingOlderHeightRef.current !== null && !bottomChanged) {
+      const delta = container.scrollHeight - pendingOlderHeightRef.current;
+      pendingOlderHeightRef.current = null;
+      if (delta > 0) container.scrollTop += delta;
+      return;
+    }
+
+    lastBottomIdRef.current = bottomId;
+    if (bottomChanged || othersTyping.length > 0) {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: isNewConversation ? 'auto' : 'smooth',
+      });
+    }
   }, [messages, othersTyping]);
+
+  // Reset scroll bookkeeping when switching conversations.
+  useEffect(() => {
+    lastBottomIdRef.current = null;
+    pendingOlderHeightRef.current = null;
+  }, [conversation?.id]);
 
   const handleLanguageSelect = (langName) => {
     const code = LANG_MAP[langName] || 'en';
@@ -218,7 +266,22 @@ export default function ChatView({
       </AnimatePresence>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-8 overscroll-contain">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-8 overscroll-contain">
+        {/* Infinite-scroll sentinel + older-history status */}
+        <div ref={topSentinelRef} className="flex items-center justify-center">
+          {loadingOlder ? (
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Loading earlier messages...
+            </span>
+          ) : hasMoreMessages ? (
+            <button onClick={onLoadOlder} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Load earlier messages
+            </button>
+          ) : messages.length > 0 ? (
+            <span className="text-xs text-muted-foreground/50">Beginning of conversation</span>
+          ) : null}
+        </div>
         <AnimatePresence initial={false}>
           {(() => {
             const filtered = messages.filter(msg => !searchQuery || (msg.content?.toLowerCase().includes(searchQuery.toLowerCase())) || (msg.translated_content?.toLowerCase().includes(searchQuery.toLowerCase())));

@@ -12,6 +12,29 @@ export const list = query({
   },
 });
 
+/**
+ * Newest `limit` messages for a conversation, returned oldest-first for the UI.
+ * `hasMore` tells the client whether older history exists above the window.
+ */
+export const listPage = query({
+  args: {
+    conversationId: v.id("conversations"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(Math.max(args.limit ?? 40, 1), 500);
+    const newestFirst = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+      .order("desc")
+      .take(limit + 1);
+
+    const hasMore = newestFirst.length > limit;
+    const page = hasMore ? newestFirst.slice(0, limit) : newestFirst;
+    return { messages: page.reverse(), hasMore };
+  },
+});
+
 export const send = mutation({
   args: {
     conversationId: v.id("conversations"),
