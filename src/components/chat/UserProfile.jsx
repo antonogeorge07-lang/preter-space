@@ -226,7 +226,7 @@ export default function UserProfile({ isOpen, onClose }) {
               >
                 <div className="flex items-start gap-2 mb-3">
                   <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-500">This will sign you out. Contact support to fully delete your account and data.</p>
+                  <p className="text-xs text-red-500">This permanently deletes your account, profile and messages. This cannot be undone.</p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -238,10 +238,11 @@ export default function UserProfile({ isOpen, onClose }) {
                   </button>
                   <button
                     onClick={handleDeleteAccount}
+                    disabled={deleting}
                     style={{ userSelect: 'none', WebkitTapHighlightColor: 'transparent' }}
-                    className="flex-1 py-2 rounded-xl text-xs bg-red-500 text-white font-medium hover:bg-red-600 transition-all"
+                    className="flex-1 py-2 rounded-xl text-xs bg-red-500 text-white font-medium hover:bg-red-600 transition-all disabled:opacity-60"
                   >
-                    Confirm
+                    {deleting ? 'Deleting...' : 'Delete permanently'}
                   </button>
                 </div>
               </motion.div>
