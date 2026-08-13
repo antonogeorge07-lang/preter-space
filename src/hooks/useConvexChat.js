@@ -77,29 +77,39 @@ export function useChatMessages(conversationId, { blockedUserIds = [] } = {}) {
     conversationId ? { conversationId } : SKIP,
   );
 
-  const messageDocs = page?.messages || [];
-  const hasMore = !!page?.hasMore;
-  // While a bigger window is in flight the previous page is still rendered.
-  const loadingOlder = page !== undefined && messageDocs.length < limit && hasMore;
+  // Convex returns `undefined` while a wider window loads — keep showing the
+  // previous page so growing the window never blanks the thread.
+  const lastPageRef = useRef(null);
+  const lastConversationRef = useRef(conversationId);
+  if (lastConversationRef.current !== conversationId) {
+    lastConversationRef.current = conversationId;
+    lastPageRef.current = null;
+  }
+  if (page !== undefined) lastPageRef.current = page;
+  const view = page ?? lastPageRef.current;
+
+  const messageDocs = view?.messages || [];
+  const hasMore = !!view?.hasMore;
+  const loadingOlder = page === undefined && !!lastPageRef.current;
 
   const messages = useMemo(() => {
-    const docs = page?.messages || [];
+    const docs = view?.messages || [];
     const reactions = groupReactions(reactionDocs || []);
     const readBy = deriveReadBy(docs, receiptDocs || []);
     return docs
       .filter((d) => !blockedUserIds.includes(d.senderId))
       .map((d) => toUiMessage(d, reactions, readBy));
-  }, [page, reactionDocs, receiptDocs, blockedUserIds.join(',')]);
+  }, [view, reactionDocs, receiptDocs, blockedUserIds.join(',')]);
 
   const loadOlder = useCallback(() => {
-    if (!hasMore) return;
+    if (!hasMore || page === undefined) return;
     setLimit((prev) => prev + MESSAGE_PAGE_SIZE);
-  }, [hasMore]);
+  }, [hasMore, page === undefined]);
 
   return {
     messages,
     messageDocs,
-    loaded: page !== undefined,
+    loaded: view !== null && view !== undefined,
     hasMore,
     loadingOlder,
     loadOlder,
