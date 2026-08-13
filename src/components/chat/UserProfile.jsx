@@ -8,6 +8,9 @@ import { Link } from '@/lib/router-compat';
 import { LANG_MAP } from '@/lib/translation';
 import { getOrCreateDeviceSessionId, forceKillRemoteSession } from '@/lib/deviceSession';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useServerFn } from '@tanstack/react-start';
+import { deleteAccount } from '@/lib/account.functions';
+import { toast } from '@/components/ui/use-toast';
 
 const LANG_OPTIONS = Object.entries(LANG_MAP)
   .map(([code, name]) => ({ code, name }))
@@ -26,6 +29,8 @@ export default function UserProfile({ isOpen, onClose }) {
   const [killingSession, setKillingSession] = useState(null);
   const fileInputRef = useRef(null);
   const mySessionId = getOrCreateDeviceSessionId();
+  const [deleting, setDeleting] = useState(false);
+  const callDeleteAccount = useServerFn(deleteAccount);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,8 +65,15 @@ export default function UserProfile({ isOpen, onClose }) {
   };
 
   const handleDeleteAccount = async () => {
-    // Sign out — account deletion requires backend support
-    await db.auth.logout('/');
+    setDeleting(true);
+    try {
+      await callDeleteAccount({});
+      toast({ title: 'Account deleted', description: 'Your account and messages have been removed.' });
+      await db.auth.logout('/');
+    } catch {
+      setDeleting(false);
+      toast({ title: 'Could not delete account', description: 'Please try again in a moment.', variant: 'destructive' });
+    }
   };
 
   const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
@@ -214,7 +226,7 @@ export default function UserProfile({ isOpen, onClose }) {
               >
                 <div className="flex items-start gap-2 mb-3">
                   <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-500">This will sign you out. Contact support to fully delete your account and data.</p>
+                  <p className="text-xs text-red-500">This permanently deletes your account, profile and messages. This cannot be undone.</p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -226,10 +238,11 @@ export default function UserProfile({ isOpen, onClose }) {
                   </button>
                   <button
                     onClick={handleDeleteAccount}
+                    disabled={deleting}
                     style={{ userSelect: 'none', WebkitTapHighlightColor: 'transparent' }}
-                    className="flex-1 py-2 rounded-xl text-xs bg-red-500 text-white font-medium hover:bg-red-600 transition-all"
+                    className="flex-1 py-2 rounded-xl text-xs bg-red-500 text-white font-medium hover:bg-red-600 transition-all disabled:opacity-60"
                   >
-                    Confirm
+                    {deleting ? 'Deleting...' : 'Delete permanently'}
                   </button>
                 </div>
               </motion.div>

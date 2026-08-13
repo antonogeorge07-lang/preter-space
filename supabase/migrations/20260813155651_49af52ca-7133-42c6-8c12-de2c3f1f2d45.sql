@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_message_block() FROM PUBLIC, anon, authenticated;

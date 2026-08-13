@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Video, Image as ImageIcon, Loader2, X, Reply, SendHorizonal, Paperclip, Timer } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 const DISAPPEAR_OPTIONS = [
   { label: 'Off', value: null },
@@ -46,7 +47,7 @@ export default function MessageInput({ onSend, onTyping, onStartRecording, onSta
     if (!file) return;
     if (!file.type.startsWith('image/')) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert('Image must be under 10 MB.');
+      toast({ title: 'Image too large', description: 'Please choose an image under 10 MB.', variant: 'destructive' });
       e.target.value = '';
       return;
     }
@@ -63,7 +64,7 @@ export default function MessageInput({ onSend, onTyping, onStartRecording, onSta
   const handleGenericFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 25 * 1024 * 1024) { alert('File must be under 25 MB.'); e.target.value = ''; return; }
+    if (file.size > 25 * 1024 * 1024) { toast({ title: 'File too large', description: 'Please choose a file under 25 MB.', variant: 'destructive' }); e.target.value = ''; return; }
     setUploadingFile(true);
     try {
       const { file_url } = await db.integrations.Core.UploadFile({ file });

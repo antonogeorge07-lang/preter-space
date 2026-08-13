@@ -19,6 +19,9 @@ import ImageLightbox from '@/components/chat/ImageLightbox';
 import GroupManageModal from '@/components/chat/GroupManageModal';
 import FileAttachmentBubble from '@/components/chat/FileAttachmentBubble';
 import ContactProfileModal from '@/components/chat/ContactProfileModal';
+import { toast } from '@/components/ui/use-toast';
+import { useServerFn } from '@tanstack/react-start';
+import { blockUser, reportConversation } from '@/lib/moderation.functions';
 
 const LANG_MAP = Object.fromEntries(Object.entries(LANG_MAP_CODES).map(([code, name]) => [name, code]));
 const LANG_NAMES = LANG_MAP_CODES;
@@ -41,6 +44,39 @@ export default function ChatView({
   const [groupManageOpen, setGroupManageOpen] = useState(false);
   const [contactProfileUserId, setContactProfileUserId] = useState(null);
   const moreMenuRef = useRef(null);
+  const [moderating, setModerating] = useState(false);
+  const callBlockUser = useServerFn(blockUser);
+  const callReportConversation = useServerFn(reportConversation);
+
+  const otherParticipantId = (conversation?.participant_ids || []).find(id => id !== currentUser?.id) || null;
+
+  const handleReport = async () => {
+    setShowMoreMenu(false);
+    if (!conversation?.id) return;
+    setModerating(true);
+    try {
+      await callReportConversation({ data: { conversationId: conversation.id, ...(otherParticipantId ? { reportedUserId: otherParticipantId } : {}) } });
+      toast({ title: 'Report submitted', description: 'Thanks — our team will review this conversation.' });
+    } catch {
+      toast({ title: 'Could not submit report', description: 'Please try again in a moment.', variant: 'destructive' });
+    } finally {
+      setModerating(false);
+    }
+  };
+
+  const handleBlock = async () => {
+    setShowMoreMenu(false);
+    if (!otherParticipantId) return;
+    setModerating(true);
+    try {
+      await callBlockUser({ data: { userId: otherParticipantId } });
+      toast({ title: 'Contact blocked', description: 'They can no longer message you.' });
+    } catch {
+      toast({ title: 'Could not block contact', description: 'Please try again in a moment.', variant: 'destructive' });
+    } finally {
+      setModerating(false);
+    }
+  };
 
   useEffect(() => {
     if (!showMoreMenu) return;
@@ -151,12 +187,12 @@ export default function ChatView({
             {showMoreMenu && (
               <div className="absolute right-0 top-full mt-1 z-30 rounded-2xl border shadow-xl overflow-hidden"
                 style={{ background: 'var(--surface-bg)', borderColor: 'var(--surface-border)', minWidth: 160 }}>
-                <button onClick={() => { setShowMoreMenu(false); alert('Reported. We will review this conversation.'); }}
-                  className="w-full px-4 py-3 text-sm text-left hover:bg-black/5 transition-colors" style={{ color: 'var(--foreground)' }}>
+                <button onClick={handleReport} disabled={moderating}
+                  className="w-full px-4 py-3 text-sm text-left hover:bg-black/5 transition-colors disabled:opacity-50" style={{ color: 'var(--foreground)' }}>
                   Report conversation
                 </button>
-                <button onClick={() => { setShowMoreMenu(false); alert('Contact blocked.'); }}
-                  className="w-full px-4 py-3 text-sm text-left hover:bg-red-50 transition-colors text-red-500">
+                <button onClick={handleBlock} disabled={moderating || !otherParticipantId}
+                  className="w-full px-4 py-3 text-sm text-left hover:bg-red-50 transition-colors text-red-500 disabled:opacity-50">
                   Block contact
                 </button>
               </div>
