@@ -708,7 +708,11 @@ export default function Landing() {
         </div>
       </div>
 
+      {/* ── Language Alignment Engine feature section ────────────────────── */}
+      <LanguageAlignmentSection />
+
       {/* ── Roadmap — expandable below the hero ────────────────────────────── */}
+
       <AnimatePresence>
         {showRoadmap && (
           <motion.div
