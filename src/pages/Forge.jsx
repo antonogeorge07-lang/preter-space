@@ -155,17 +155,30 @@ export default function Forge() {
     [messages, myKey],
   );
 
+  // ── Language handshake ───────────────────────────────────────────────────
+  // If a contact has no language on their account yet, infer it from the
+  // language actually detected on their most recent message in this thread.
+  const inferredLanguages = useMemo(() => {
+    const out = {};
+    for (const msg of messages) {
+      if (!msg.sender_id || msg.sender_id === myKey || msg.is_guide) continue;
+      if (msg.original_language) out[msg.sender_id] = msg.original_language;
+    }
+    return out;
+  }, [messages, myKey]);
+
   // Each participant's own account language is the source of truth for
-  // "which language do I read in"; the conversation row is only a fallback.
+  // "which language do I read in"; then the language detected from what they
+  // wrote; the conversation row is only the last fallback.
   const getParticipantLang = useCallback(
     (conv, userId) => {
       if (!userId) return conv?.preferred_language || 'en';
       if (userId === myKey && myLanguage) return myLanguage;
       if (participantLanguages[userId]) return participantLanguages[userId];
       const langs = safeJson(conv?.participant_languages, {});
-      return langs[userId] || conv?.preferred_language || 'en';
+      return langs[userId] || inferredLanguages[userId] || conv?.preferred_language || 'en';
     },
-    [myKey, myLanguage, participantLanguages],
+    [myKey, myLanguage, participantLanguages, inferredLanguages],
   );
 
   // Get current user's preferred language for this conversation
