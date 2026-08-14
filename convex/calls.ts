@@ -23,6 +23,8 @@ export const start = mutation({
     conversationId: v.optional(v.id("conversations")),
     callerId: v.string(),
     calleeId: v.string(),
+    callerName: v.optional(v.string()),
+    calleeName: v.optional(v.string()),
     isVideo: v.optional(v.boolean()),
     offer: v.optional(v.any()),
   },
@@ -31,6 +33,8 @@ export const start = mutation({
       conversationId: args.conversationId,
       callerId: args.callerId,
       calleeId: args.calleeId,
+      callerName: args.callerName,
+      calleeName: args.calleeName,
       status: "ringing",
       isVideo: args.isVideo ?? false,
       offer: args.offer,
@@ -40,6 +44,7 @@ export const start = mutation({
     });
   },
 });
+
 
 export const answer = mutation({
   args: { callId: v.id("calls"), answer: v.optional(v.any()) },
