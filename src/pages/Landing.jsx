@@ -738,7 +738,7 @@ export default function Landing() {
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <div className="relative z-10 border-t py-6 px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"
         style={{ borderColor: 'var(--surface-border)', color: 'var(--muted)' }}>
-        <span className="font-heading" style={{ color: 'var(--primary)' }}>Preter</span>
+        <span className="font-heading" style={{ color: 'var(--primary)' }}>Preter&nbsp; |&nbsp;An Invictus Faith Studio Creation&nbsp;</span>
         <div className="flex items-center gap-4">
           <a href="/legal" className="hover:opacity-70 transition-opacity underline underline-offset-2">Privacy & Terms</a>
           <span>© {new Date().getFullYear()} Preter. GDPR compliant.</span>
