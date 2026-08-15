@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from '@/lib/router-compat';
 
 import { db } from '@/lib/db';
-import { detectAndTranslate } from '@/lib/translation';
 import saveUserLanguage from '@/lib/saveUserLanguage';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import {
@@ -66,6 +65,7 @@ export default function Forge() {
 
   const {
     sendMessage: sendConvexMessage,
+    sendMessageWithTranslation,
     updateMessage,
     toggleReaction,
     createConversation,
@@ -268,12 +268,13 @@ export default function Forge() {
         ...(replyTo ? { replyToContent: replyTo.content, replyToSender: replyTo.sender_name } : {}),
       };
 
+      const replyToId = replyTo ? replyTo.id : null;
       const payload = {
         conversationId: activeConversation.id,
         senderId: myKey,
         text,
         meta,
-        ...(replyTo ? { replyToId: replyTo.id } : {}),
+        ...(replyToId ? { replyToId } : {}),
       };
       if (replyTo) setReplyTo(null);
 
@@ -283,30 +284,21 @@ export default function Forge() {
         return;
       }
 
-      // Translate BEFORE inserting so the stored message already carries the
-      // recipients' languages - no untranslated flash on their side.
+      // Translation happens server-side (Convex action) so keys stay on the
+      // backend and every recipient language is filled in before the insert.
       const translations = {};
       let originalLang = '';
       try {
-        const results = await Promise.all(
-          targetLangs.map(async (lang) => ({ lang, ...(await detectAndTranslate(text, lang)) })),
-        );
-        results.forEach(({ lang, translatedText, detectedLang }) => {
-          if (translatedText) translations[lang] = translatedText;
-          if (!originalLang && detectedLang) originalLang = detectedLang;
+        const result = await sendMessageWithTranslation({
+          conversationId: activeConversation.id,
+          senderId: myKey,
+          text,
+          targetLanguages: targetLangs,
+          meta: { ...meta, targetLanguage: recipientLang },
+          ...(replyToId ? { replyToId } : {}),
         });
-      } catch {
-        // Translation unavailable - send the original text through anyway.
-      }
-
-      const primaryTranslation = translations[recipientLang] || text;
-      if (Object.keys(translations).length > 0) {
-        payload.translations = translations;
-        payload.meta = { ...meta, translatedContent: primaryTranslation, originalLanguage: originalLang };
-      }
-
-      try {
-        await sendConvexMessage(payload);
+        Object.assign(translations, result?.translations || {});
+        originalLang = result?.detectedLanguage || '';
       } catch (err) {
         const blocked = /blocked/i.test(err?.message || '');
         toast({
@@ -320,6 +312,9 @@ export default function Forge() {
         return;
       }
 
+      const primaryTranslation = translations[recipientLang] || text;
+      void originalLang;
+
       // Bump conversation preview + unread counters
       const counts = safeJson(activeConversation.unread_counts, {});
       recipientIds.forEach((pid) => { counts[pid] = (counts[pid] || 0) + 1; });
@@ -331,7 +326,7 @@ export default function Forge() {
 
       setIsProcessing(false);
     },
-    [activeConversation, myKey, currentUser, replyTo, blockedUserIds, isProcessing, getMyLang, getParticipantLang, sendConvexMessage, updateMessage, updateConversation, setTyping],
+    [activeConversation, myKey, currentUser, replyTo, blockedUserIds, isProcessing, getMyLang, getParticipantLang, sendConvexMessage, sendMessageWithTranslation, updateMessage, updateConversation, setTyping],
   );
 
   // ── Media / file messages ────────────────────────────────────────────────

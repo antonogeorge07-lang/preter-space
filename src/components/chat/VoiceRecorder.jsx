@@ -6,6 +6,8 @@ import { Mic, Square, X, Loader2, Play, Pause, Languages, Globe } from 'lucide-r
 
 import { detectLanguage, translateText } from '@/lib/translation';
 
+const BAR_COUNT = 24;
+
 export default function VoiceRecorder({ isOpen, onClose, onVoiceNoteReady, targetLanguage }) {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -14,21 +16,66 @@ export default function VoiceRecorder({ isOpen, onClose, onVoiceNoteReady, targe
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTranslated, setShowTranslated] = useState(true);
+  const [levels, setLevels] = useState(() => new Array(BAR_COUNT).fill(0));
   const mediaRecorderRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
   const chunksRef = useRef([]);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const rafRef = useRef(null);
+
+  const stopVisualizer = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    analyserRef.current = null;
+    setLevels(new Array(BAR_COUNT).fill(0));
+  }, []);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+      if (audioContextRef.current) audioContextRef.current.close().catch(() => {});
     };
   }, []);
 
   const startRecording = useCallback(async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     streamRef.current = stream;
+
+    // Web Audio graph: raw PCM access for the live waveform visualizer.
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+        audioContextRef.current = new AudioContextClass();
+      }
+      await audioContextRef.current.resume().catch(() => {});
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      const analyser = audioContextRef.current.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.75;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        const node = analyserRef.current;
+        if (!node) return;
+        node.getByteFrequencyData(data);
+        const bucket = Math.max(1, Math.floor(data.length / BAR_COUNT));
+        const next = new Array(BAR_COUNT).fill(0).map((_, i) => {
+          let sum = 0;
+          for (let j = 0; j < bucket; j++) sum += data[i * bucket + j] || 0;
+          return Math.min(1, sum / bucket / 180);
+        });
+        setLevels(next);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
     const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
     mediaRecorderRef.current = recorder;
     chunksRef.current = [];
@@ -42,6 +89,20 @@ export default function VoiceRecorder({ isOpen, onClose, onVoiceNoteReady, targe
       setAudioBlob(blob);
       const localUrl = URL.createObjectURL(blob);
       setAudioUrl(localUrl);
+
+      // Decode to a raw PCM buffer so duration is exact even when the
+      // MediaRecorder container reports none.
+      try {
+        const ctx = audioContextRef.current;
+        if (ctx && ctx.state !== 'closed') {
+          const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
+          if (Number.isFinite(decoded.duration) && decoded.duration > 0) {
+            setDuration(Math.max(1, Math.round(decoded.duration)));
+          }
+        }
+      } catch {
+        /* decoding is best-effort - keep the timer-based duration */
+      }
     };
 
     recorder.start(100);
@@ -57,9 +118,10 @@ export default function VoiceRecorder({ isOpen, onClose, onVoiceNoteReady, targe
       mediaRecorderRef.current.stop();
       streamRef.current?.getTracks().forEach(t => t.stop());
       clearInterval(timerRef.current);
+      stopVisualizer();
       setIsRecording(false);
     }
-  }, [isRecording]);
+  }, [isRecording, stopVisualizer]);
 
   const togglePlayback = useCallback(() => {
     if (!audioUrl) return;
@@ -165,14 +227,12 @@ export default function VoiceRecorder({ isOpen, onClose, onVoiceNoteReady, targe
                   <span className="text-sm">Processing...</span>
                 </div>
               ) : isRecording ? (
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 24 }).map((_, i) => (
-                    <motion.div
+                <div className="flex items-end gap-1 h-14">
+                  {levels.map((level, i) => (
+                    <div
                       key={i}
-                      className="w-1 rounded-full"
-                      style={{ background: 'var(--primary)' }}
-                      animate={{ height: [8, 28, 12, 24][i % 4] }}
-                      transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.03 }}
+                      className="w-1 rounded-full transition-[height] duration-75"
+                      style={{ background: 'var(--primary)', height: `${4 + level * 48}px` }}
                     />
                   ))}
                 </div>
