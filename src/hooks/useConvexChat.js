@@ -212,6 +212,7 @@ export function useReadReceipts({ conversationId, key, messageDocs }) {
 /** All chat write paths, as Convex mutations. */
 export function useChatMutations() {
   const sendMessage = useConvexMutation(convexApi.messages.send);
+  const sendMessageWithTranslation = useConvexAction(convexApi.messages.sendWithTranslation);
   const updateMessage = useConvexMutation(convexApi.messages.update);
   const removeMessage = useConvexMutation(convexApi.messages.remove);
   const toggleReaction = useConvexMutation(convexApi.reactions.toggle);
@@ -228,6 +229,7 @@ export function useChatMutations() {
 
   return {
     sendMessage,
+    sendMessageWithTranslation,
     updateMessage,
     removeMessage,
     toggleReaction,
