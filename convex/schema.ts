@@ -37,7 +37,7 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     senderId: v.string(),
     text: v.string(),
-    translations: v.optional(v.any()),
+    translations: v.optional(v.record(v.string(), v.string())),
     audioStorageId: v.optional(v.id("_storage")),
     fileStorageId: v.optional(v.id("_storage")),
     replyToId: v.optional(v.id("messages")),
