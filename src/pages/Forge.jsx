@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from '@/lib/router-compat';
 
 import { db } from '@/lib/db';
-import { detectAndTranslate } from '@/lib/translation';
 import saveUserLanguage from '@/lib/saveUserLanguage';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import {
