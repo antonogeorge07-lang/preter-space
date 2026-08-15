@@ -3,7 +3,7 @@
  * Everything here is a live subscription (`useQuery`) or a `useMutation`.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useConvexQuery, useConvexMutation } from '@/lib/convex';
+import { useConvexQuery, useConvexMutation, useConvexAction } from '@/lib/convex';
 import { convexApi } from '@/lib/convexApi';
 import {
   toUiConversation,
