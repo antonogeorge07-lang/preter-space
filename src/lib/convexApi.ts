@@ -59,6 +59,17 @@ export const convexApi = {
       },
       string
     >("messages:send"),
+    sendWithTranslation: fn.action<
+      {
+        conversationId: string;
+        senderId: string;
+        text: string;
+        targetLanguages: string[];
+        replyToId?: string;
+        meta?: Record<string, unknown>;
+      },
+      { messageId: string; translations: Record<string, string>; detectedLanguage: string }
+    >("messages:sendWithTranslation"),
     update: fn.mutation<
       {
         messageId: string;
