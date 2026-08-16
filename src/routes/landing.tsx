@@ -37,7 +37,7 @@ export const Route = createFileRoute("/landing")({
           "@type": "Organization",
           name: "Preter",
           url: "https://preter.space",
-          logo: "https://preter.space/favicon.ico",
+          logo: "https://preter.space/favicon.png",
         }),
       },
     ],
