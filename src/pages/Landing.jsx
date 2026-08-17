@@ -42,23 +42,27 @@ function getGreeting() {
 
 const LIVE_NOW = [
   { icon: <Languages className="w-4 h-4" />, label: 'Real-time message translation', detail: '50+ languages, every text auto-translated on send' },
-  { icon: <Mic className="w-4 h-4" />, label: 'Voice note translation', detail: 'Transcribed and translated before the other person hears it' },
   { icon: <Video className="w-4 h-4" />, label: 'Video & audio calls', detail: 'WebRTC peer-to-peer with live caption overlay' },
   { icon: <FileText className="w-4 h-4" />, label: 'File & image sharing', detail: 'Photos, PDFs, documents with captions' },
-  { icon: <Bell className="w-4 h-4" />, label: 'Push notifications', detail: 'Background alerts even when the tab is closed' },
   { icon: <Users className="w-4 h-4" />, label: 'Group chats', detail: 'Multi-person threads, each member reads in their language' },
-  { icon: <Shield className="w-4 h-4" />, label: 'Zero-knowledge design', detail: 'We never read your messages. Role-based access control.' },
+  { icon: <Bell className="w-4 h-4" />, label: 'Local notifications', detail: 'In-browser alerts while a Preter tab is open' },
+  { icon: <Mic className="w-4 h-4" />, label: 'Voice notes', detail: 'Record and send audio messages with a live waveform' },
+  { icon: <Sparkles className="w-4 h-4" />, label: 'AI smart summaries', detail: 'Catch up on long conversations with a one-paragraph digest' },
+  { icon: <Zap className="w-4 h-4" />, label: 'Reactions & read receipts', detail: 'Emoji reactions and live presence indicators' },
+  { icon: <Search className="w-4 h-4" />, label: 'Contact discovery', detail: 'Find existing Preter users by name' },
+  { icon: <Clock className="w-4 h-4" />, label: 'Disappearing message timers', detail: 'Per-message countdown before it fades from the chat' },
   { icon: <Globe className="w-4 h-4" />, label: 'PWA, no install needed', detail: 'Works on any browser. Add to home screen for an app-like experience.' },
 ];
 
 const COMING_SOON = [
+  { label: 'Voice note translation', when: 'Q3 2026', detail: 'Transcribed and translated before the other person hears it.' },
   { label: 'Translated audio calls', when: 'Q3 2026', detail: 'Speak your language and they hear theirs, in real-time.' },
   { label: 'End-to-end encryption (E2EE)', when: 'Q3 2026', detail: 'Signal-grade encryption. Keys never leave your device.' },
-  { label: 'Message threads & reactions', when: 'Q3 2026', detail: 'Reply chains and emoji reactions inside any message.' },
-  { label: 'AI smart summaries', when: 'Q4 2026', detail: 'Catch up on long conversations with a one-paragraph digest.' },
+  { label: 'Background push notifications', when: 'Q4 2026', detail: 'Alerts even when the tab is closed.' },
+  { label: 'Message threads', when: 'Q4 2026', detail: 'Reply chains inside any message.' },
   { label: 'Native iOS & Android apps', when: 'Q4 2026', detail: 'Wrapped PWA for App Store & Play Store distribution.' },
-  { label: 'Contact discovery', when: 'Q4 2026', detail: 'Find existing Preter users by phone number.' },
-  { label: 'Disappearing messages 2.0', when: 'Early 2027', detail: 'Per-message timers and auto-clear conversation mode.' },
+  { label: 'Phone number contact discovery', when: 'Q4 2026', detail: 'Find existing Preter users by phone number.' },
+  { label: 'Server-side disappearing messages', when: 'Early 2027', detail: 'Auto-clear conversation mode with server-enforced TTL.' },
   { label: 'Workspace / team plans', when: 'Early 2027', detail: 'Shared inboxes, admin dashboards, SSO.' },
 ];
 
@@ -193,14 +197,14 @@ function LanguageAlignmentSection() {
       detail: 'Automatically detects and matches your contact\'s preferred language for every conversation thread.',
     },
     {
-      icon: <Mic className="w-4 h-4" />,
-      title: 'Dual-Language Audio Stream',
-      detail: 'Record a voice note in your native tongue; your recipient can listen or read the transcribed translation instantly.',
-    },
-    {
       icon: <Eye className="w-4 h-4" />,
       title: 'Original Text Peek',
       detail: 'Flip between the translated message and the original source text with a single tap.',
+    },
+    {
+      icon: <Sparkles className="w-4 h-4" />,
+      title: 'AI-Powered Translation',
+      detail: 'Server-side translation fills in missing languages so messages arrive ready to read.',
     },
   ];
 
@@ -219,7 +223,7 @@ function LanguageAlignmentSection() {
 
         {/* Subheadline */}
         <p className="text-sm sm:text-base leading-relaxed text-center max-w-2xl mx-auto mb-12" style={{ color: 'var(--muted)' }}>
-          Zero copy-pasting, zero app switching. Type or speak in your native language, and Preter AI instantly translates and delivers it in your recipient's target language in real time.
+          Zero copy-pasting, zero app switching. Type in your native language, and Preter AI translates and delivers it in your recipient's target language in real time.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
