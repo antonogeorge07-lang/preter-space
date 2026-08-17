@@ -41,11 +41,14 @@ export async function forceKillRemoteSession(user, targetSessionId) {
   await db.auth.updateMe({ active_sessions: filtered });
 }
 
-// 4. Check if this device's session has been remotely killed
-// Returns true if the session is still valid, false if it was terminated
+// 4. Check if this device's session has been remotely killed.
+// Fail-safe: only report "dead" when we can positively prove the session was
+// removed from a non-empty list. Any missing/empty/unknown state = still alive,
+// so transient errors or an un-synced profile never sign the user out.
 export function isCurrentSessionAlive(user) {
   const sessionId = localStorage.getItem(SESSION_KEY);
-  if (!sessionId || !user) return true; // no session yet = not killed
-  const sessions = Array.isArray(user.active_sessions) ? user.active_sessions : [];
-  return sessions.some(s => s.id === sessionId);
+  if (!sessionId || !user) return true;
+  const sessions = Array.isArray(user.active_sessions) ? user.active_sessions : null;
+  if (!sessions || sessions.length === 0) return true; // nothing registered yet
+  return sessions.some((s) => s && s.id === sessionId);
 }
