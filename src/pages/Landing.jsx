@@ -223,7 +223,7 @@ function LanguageAlignmentSection() {
 
         {/* Subheadline */}
         <p className="text-sm sm:text-base leading-relaxed text-center max-w-2xl mx-auto mb-12" style={{ color: 'var(--muted)' }}>
-          Zero copy-pasting, zero app switching. Type or speak in your native language, and Preter AI instantly translates and delivers it in your recipient's target language in real time.
+          Zero copy-pasting, zero app switching. Type in your native language, and Preter AI translates and delivers it in your recipient's target language in real time.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
