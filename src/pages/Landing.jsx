@@ -197,14 +197,14 @@ function LanguageAlignmentSection() {
       detail: 'Automatically detects and matches your contact\'s preferred language for every conversation thread.',
     },
     {
-      icon: <Mic className="w-4 h-4" />,
-      title: 'Dual-Language Audio Stream',
-      detail: 'Record a voice note in your native tongue; your recipient can listen or read the transcribed translation instantly.',
-    },
-    {
       icon: <Eye className="w-4 h-4" />,
       title: 'Original Text Peek',
       detail: 'Flip between the translated message and the original source text with a single tap.',
+    },
+    {
+      icon: <Sparkles className="w-4 h-4" />,
+      title: 'AI-Powered Translation',
+      detail: 'Server-side translation fills in missing languages so messages arrive ready to read.',
     },
   ];
 
