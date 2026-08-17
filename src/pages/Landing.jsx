@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, Shield, Sparkles, Eye, EyeOff, Share2, MessageSquare,
   Languages, Mic, Phone, Video, FileText, Bell, Users, Zap,
-  Clock, Lock, CheckCircle, ArrowRight, ChevronDown
+  Clock, Lock, CheckCircle, ArrowRight, ChevronDown, Search
 } from 'lucide-react';
 import GoogleIcon from '@/components/GoogleIcon';
 
