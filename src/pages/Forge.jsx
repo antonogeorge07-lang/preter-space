@@ -101,15 +101,35 @@ export default function Forge() {
   // ── Register device session + poll for remote kill ───────────────────────
   useEffect(() => {
     if (!authUser) return;
-    registerActiveDeviceSession(authUser);
+    let cancelled = false;
+    let strikes = 0;
+    registerActiveDeviceSession(authUser).catch(() => {});
     const interval = setInterval(async () => {
-      const fresh = await db.auth.me();
-      if (!isCurrentSessionAlive(fresh)) {
-        await db.auth.logout('/landing');
+      let fresh = null;
+      try {
+        fresh = await db.auth.me();
+      } catch {
+        return; // network/API hiccup: never sign the user out on an error
       }
+      if (cancelled || !fresh) return;
+      if (isCurrentSessionAlive(fresh)) {
+        strikes = 0;
+        return;
+      }
+      strikes += 1;
+      if (strikes < 2) {
+        // Could be a stale read or a lost write: try to re-register once.
+        registerActiveDeviceSession(fresh).catch(() => {});
+        return;
+      }
+      await db.auth.logout('/landing');
     }, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [authUser?.id]);
+
 
   // ── Online/offline tracking + queue flush ────────────────────────────────
   useEffect(() => {
