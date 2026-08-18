@@ -1,5 +1,9 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
+
+/** A call only rings for this long before it is treated as missed. */
+const RING_WINDOW_MS = 45_000;
 
 export const getIncoming = query({
   args: { userId: v.string() },
@@ -9,13 +13,25 @@ export const getIncoming = query({
       .withIndex("by_callee", (q) => q.eq("calleeId", args.userId))
       .order("desc")
       .take(10);
-    return calls.filter((c) => c.status === "ringing");
+    const cutoff = Date.now() - RING_WINDOW_MS;
+    // Ignore stale "ringing" docs so an old call can never block a new one.
+    return calls.filter((c) => c.status === "ringing" && c.startedAt >= cutoff);
   },
 });
 
 export const get = query({
   args: { callId: v.id("calls") },
   handler: async (ctx, args) => await ctx.db.get(args.callId),
+});
+
+export const expireIfRinging = internalMutation({
+  args: { callId: v.id("calls") },
+  handler: async (ctx, args) => {
+    const call = await ctx.db.get(args.callId);
+    if (call && call.status === "ringing") {
+      await ctx.db.patch(args.callId, { status: "missed", endedAt: Date.now() });
+    }
+  },
 });
 
 export const start = mutation({
@@ -29,7 +45,7 @@ export const start = mutation({
     offer: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("calls", {
+    const callId = await ctx.db.insert("calls", {
       conversationId: args.conversationId,
       callerId: args.callerId,
       calleeId: args.calleeId,
@@ -42,8 +58,22 @@ export const start = mutation({
       calleeCandidates: [],
       startedAt: Date.now(),
     });
+
+    // Ring the callee even when their app is closed/backgrounded.
+    await ctx.scheduler.runAfter(0, api.push.notifyCall, {
+      calleeId: args.calleeId,
+      callerName: args.callerName,
+      isVideo: args.isVideo ?? false,
+      ...(args.conversationId ? { conversationId: args.conversationId } : {}),
+    });
+
+    // Mark as missed if nobody picks up.
+    await ctx.scheduler.runAfter(RING_WINDOW_MS, internal.calls.expireIfRinging, { callId });
+
+    return callId;
   },
 });
+
 
 
 export const answer = mutation({
