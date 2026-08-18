@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, PhoneOff, Video } from 'lucide-react';
 import { useIncomingCalls } from '@/hooks/useConvexChat';
 import { convexChat } from '@/lib/convexChat';
+import CallAvatar from '@/components/chat/CallAvatar';
 
 export default function IncomingCallBanner({ currentUser, conversations, onAnswer }) {
   const [dismissedIds, setDismissedIds] = useState([]);
@@ -110,12 +111,12 @@ export default function IncomingCallBanner({ currentUser, conversations, onAnswe
           </div>
 
           <div className="flex gap-2 flex-shrink-0">
-            <motion.button whileTap={{ scale: 0.9 }} onClick={decline}
-              className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30">
+            <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={decline}
+              className="relative z-50 pointer-events-auto w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30">
               <PhoneOff className="w-5 h-5 text-white" />
             </motion.button>
-            <motion.button whileTap={{ scale: 0.9 }} onClick={answer}
-              className="w-11 h-11 rounded-full bg-green-400 flex items-center justify-center shadow-lg shadow-green-400/30">
+            <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={answer}
+              className="relative z-50 pointer-events-auto w-11 h-11 rounded-full bg-green-400 flex items-center justify-center shadow-lg shadow-green-400/30">
               {isVideo ? <Video className="w-5 h-5 text-white" /> : <Phone className="w-5 h-5 text-white" />}
             </motion.button>
           </div>
