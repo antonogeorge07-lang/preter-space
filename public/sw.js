@@ -6,16 +6,21 @@ self.addEventListener('push', (event) => {
   let payload = {};
   try { payload = event.data ? event.data.json() : {}; } catch { payload = { body: event.data && event.data.text() }; }
   const title = payload.title || 'Preter';
+  const isCall = payload.kind === 'call';
   event.waitUntil(
     self.registration.showNotification(title, {
-      body: payload.body || 'You have a new message',
+      body: payload.body || (isCall ? 'Incoming call' : 'You have a new message'),
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       data: { url: payload.url || '/' },
-      tag: 'preter-message',
+      tag: isCall ? 'preter-call' : 'preter-message',
+      renotify: isCall,
+      requireInteraction: isCall,
+      vibrate: isCall ? [400, 200, 400, 200, 400] : undefined,
     })
   );
 });
+
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

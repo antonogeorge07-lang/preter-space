@@ -69,3 +69,44 @@ export const notifyMessage = action({
     return null;
   },
 });
+
+export const notifyCall = action({
+  args: {
+    calleeId: v.string(),
+    callerName: v.optional(v.string()),
+    isVideo: v.optional(v.boolean()),
+    conversationId: v.optional(v.id("conversations")),
+  },
+  handler: async (ctx, args) => {
+    if (!configure()) return null;
+
+    const subs = await ctx.runQuery(api.pushData.subscriptionsFor, { userIds: [args.calleeId] });
+    if (subs.length === 0) return null;
+
+    const payload = JSON.stringify({
+      title: `${args.callerName || "Someone"} is calling`,
+      body: args.isVideo ? "Incoming video call" : "Incoming voice call",
+      url: args.conversationId ? `/chat/${args.conversationId}` : "/",
+      kind: "call",
+    });
+
+    await Promise.all(
+      subs.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload,
+            { urgency: "high", TTL: 45 },
+          );
+        } catch (error) {
+          const status = (error as { statusCode?: number })?.statusCode;
+          if (status === 404 || status === 410) {
+            await ctx.runMutation(api.pushData.unsubscribe, { endpoint: sub.endpoint });
+          }
+        }
+      }),
+    );
+
+    return null;
+  },
+});
