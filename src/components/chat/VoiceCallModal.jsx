@@ -24,9 +24,11 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
 
   const isCaller = !incomingSession;
   const isVideo = callType === 'video' || incomingSession?.call_type === 'video';
-  const otherName = isCaller
-    ? (conversation?.participant_name || 'Contact')
-    : (incomingSession?.caller_name || 'Contact');
+  const otherName = safeDisplayName(
+    isCaller ? conversation?.participant_name : incomingSession?.caller_name,
+    'Contact',
+  );
+
   const otherAvatar = conversation?.participant_avatar || incomingSession?.caller_avatar || null;
   const myName = currentUser?.full_name || currentUser?.email || 'Me';
   // Derive recipient language from conversation participant_languages
