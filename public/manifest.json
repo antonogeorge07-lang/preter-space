@@ -1,7 +1,7 @@
 {
   "name": "Preter - Multilingual Messenger",
   "short_name": "Preter",
-  "description": "Chat in any language, AI translated.",
+  "description": "Chat in any language, AI interpreted.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F9FAFB",

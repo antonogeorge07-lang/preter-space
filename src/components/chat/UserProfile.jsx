@@ -187,7 +187,7 @@ export default function UserProfile({ isOpen, onClose }) {
 
             {/* Default language */}
             <div className="mb-6">
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Default Translation Language</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Default Interpretation Language</label>
               <Select value={defaultLang} onValueChange={setDefaultLang}>
                 <SelectTrigger className="w-full rounded-2xl bg-[var(--card-bg)] border border-[var(--card-border)] h-12">
                   <Globe className="w-4 h-4 text-muted-foreground mr-2 flex-shrink-0" />

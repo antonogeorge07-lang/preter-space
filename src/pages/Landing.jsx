@@ -41,7 +41,7 @@ function getGreeting() {
 // ── Feature data ────────────────────────────────────────────────────────────
 
 const LIVE_NOW = [
-  { icon: <Languages className="w-4 h-4" />, label: 'Real-time message translation', detail: '50+ languages, every text auto-translated on send' },
+  { icon: <Languages className="w-4 h-4" />, label: 'Real-time message interpretation', detail: '50+ languages, every text auto-interpreted on send' },
   { icon: <Video className="w-4 h-4" />, label: 'Video & audio calls', detail: 'WebRTC peer-to-peer with live caption overlay' },
   { icon: <FileText className="w-4 h-4" />, label: 'File & image sharing', detail: 'Photos, PDFs, documents with captions' },
   { icon: <Users className="w-4 h-4" />, label: 'Group chats', detail: 'Multi-person threads, each member reads in their language' },
@@ -55,8 +55,8 @@ const LIVE_NOW = [
 ];
 
 const COMING_SOON = [
-  { label: 'Voice note translation', when: 'Q3 2026', detail: 'Transcribed and translated before the other person hears it.' },
-  { label: 'Translated audio calls', when: 'Q3 2026', detail: 'Speak your language and they hear theirs, in real-time.' },
+  { label: 'Voice note interpretation', when: 'Q3 2026', detail: 'Transcribed and interpreted before the other person hears it.' },
+  { label: 'Interpreted audio calls', when: 'Q3 2026', detail: 'Speak your language and they hear theirs, in real-time.' },
   { label: 'End-to-end encryption (E2EE)', when: 'Q3 2026', detail: 'Signal-grade encryption. Keys never leave your device.' },
   { label: 'Background push notifications', when: 'Q4 2026', detail: 'Alerts even when the tab is closed.' },
   { label: 'Message threads', when: 'Q4 2026', detail: 'Reply chains inside any message.' },
@@ -203,7 +203,7 @@ function LanguageAlignmentSection() {
     },
     {
       icon: <Sparkles className="w-4 h-4" />,
-      title: 'AI-Powered Translation',
+      title: 'AI-Powered Interpretation',
       detail: 'Server-side interpretation fills in missing languages so messages arrive ready to read.',
     },
   ];
@@ -437,7 +437,7 @@ export default function Landing() {
 
   const handleShare = () => {
     const url = window.location.origin;
-    const text = `I'm on Preter. It translates every message in real-time so we can chat in our own languages. Join me here:`;
+    const text = `I'm on Preter. It interprets every message in real-time so we can chat in our own languages. Join me here:`;
     if (navigator.share) {
       navigator.share({ title: 'Join me on Preter', text, url }).then(() => setSharedInvite(true)).catch(() => {});
     } else {
@@ -659,7 +659,7 @@ export default function Landing() {
                         <Globe className="w-7 h-7" style={{ color: 'var(--primary)' }} />
                       </div>
                       <h2 className="text-xl font-semibold mb-1 font-heading" style={{ color: 'var(--foreground)' }}>What language do you think in?</h2>
-                      <p className="text-sm" style={{ color: 'var(--muted)' }}>Preter will translate everything into this language for you.</p>
+                      <p className="text-sm" style={{ color: 'var(--muted)' }}>Preter will interpret everything into this language for you.</p>
                     </div>
                     <div className="grid grid-cols-3 gap-2 mb-5">
                       {LANGUAGES.map((l) => (

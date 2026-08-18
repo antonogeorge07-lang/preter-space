@@ -93,7 +93,7 @@ export default function VoiceNoteBubble({ message, preferredLang }) {
             style={{ background: 'var(--glass-bg-subtle)', color: 'var(--primary)', border: '1px solid var(--card-border)' }}
           >
             <Languages className="w-3 h-3" />
-            {showOriginal ? 'Show translation' : 'Show original'}
+            {showOriginal ? 'Show interpretation' : 'Show original'}
           </motion.button>
         )}
       </div>

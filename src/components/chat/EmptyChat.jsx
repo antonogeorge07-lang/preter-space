@@ -34,7 +34,7 @@ export default function EmptyChat({ onMenuClick }) {
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-pink)' }}>
               <Zap className="w-4 h-4" style={{ color: 'var(--primary)' }} />
             </div>
-            <span className="text-sm text-left" style={{ color: 'var(--foreground)' }}>Proprietary Neural Translation Core, sub-millisecond</span>
+            <span className="text-sm text-left" style={{ color: 'var(--foreground)' }}>Proprietary Neural Interpretation Core, sub-millisecond</span>
           </div>
           <div className="flex items-center gap-3 p-4 rounded-2xl shadow-sm"
             style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>

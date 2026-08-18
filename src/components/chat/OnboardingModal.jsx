@@ -18,13 +18,13 @@ const STEPS = [
     id: 'welcome',
     icon: '🌍',
     title: 'Talk to anyone,\nin any language.',
-    subtitle: 'Preter translates every message in real-time so you and your contacts always read in your own language.',
+    subtitle: 'Preter interprets every message in real-time so you and your contacts always read in your own language.',
   },
   {
     id: 'language',
     icon: '🗣️',
     title: 'What language\ndo you speak?',
-    subtitle: 'Every message you receive will be translated into this language automatically.',
+    subtitle: 'Every message you receive will be interpreted into this language automatically.',
   },
   {
     id: 'invite',
@@ -73,7 +73,7 @@ export default function OnboardingModal({ isOpen, onComplete, currentUser }) {
         unreadCounts: {},
       });
       const url = getInviteUrl(code);
-      const text = `I'm on Preter. It translates every message in real-time so we can chat in our own languages. Join me here: ${url}`;
+      const text = `I'm on Preter. It interprets every message in real-time so we can chat in our own languages. Join me here: ${url}`;
       if (navigator.share) {
         await navigator.share({ title: 'Join me on Preter', text });
       } else {

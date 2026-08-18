@@ -11,8 +11,8 @@ const FEATURE_SECTIONS = {
     {
       title: '✅ Live Today',
       items: [
-        'Real-time text translation: 50+ languages, both directions, automatic on send.',
-        'Voice note transcription and translation: audio is transcribed then translated before delivery.',
+        'Real-time text interpretation: 50+ languages, both directions, automatic on send.',
+        'Voice note transcription and interpretation: audio is transcribed then interpreted before delivery.',
         'WebRTC video and audio calls: peer-to-peer with live caption overlay powered by Web Speech API.',
         'Image, file, and document sharing (JPEG, PNG, PDF, DOCX, ZIP) with captions.',
         'Group conversations, every participant reads in their own language simultaneously.',
@@ -34,7 +34,7 @@ const FEATURE_SECTIONS = {
     {
       title: '🔜 Coming, Q3 2026',
       items: [
-        'Translated audio calls: speak your language and your contact hears theirs in real-time.',
+        'Interpreted audio calls: speak your language and your contact hears theirs in real-time.',
         'End-to-end encryption (E2EE): Signal-grade, keys never leave your device.',
         'Message threads & nested replies.',
         'AI conversation summaries: catch up on long threads in one paragraph.',
@@ -91,7 +91,7 @@ For any data-related enquiries, contact: legal@preter.app`,
 
 • Account data: email address, display name (provided at registration).
 • Message content: text messages, voice transcripts, and media files you send.
-• Language preferences: your selected translation language.
+• Language preferences: your selected interpretation language.
 • Push notification subscription: a browser-generated endpoint token (if you opt in).
 • Technical data: timestamps, IP address (via hosting provider), device type inferred from browser.
 • Usage data: which conversations you participate in, when messages are sent and read.
@@ -103,7 +103,7 @@ We do NOT collect payment data, location data, or biometric data.`,
         text: `Your data is used exclusively to:
 
 • Deliver messages between conversation participants.
-• Perform real-time translation using third-party AI (Google Gemini via our platform provider).
+• Perform real-time interpretation using third-party AI (Google Gemini via our platform provider).
 • Send account verification emails (OTP codes) and invite notifications.
 • Deliver push notifications to your device when you opt in.
 • Maintain session authentication and security.
@@ -122,7 +122,7 @@ Consent (Art. 6(1)(a)): push notifications and optional features you explicitly 
         text: `We share minimal data with the following processors under appropriate data processing agreements:
 
 Base44 / Wix (platform infrastructure and database hosting): EU/US data transfer under Standard Contractual Clauses.
-Google (AI translation via Gemini Flash API): message text is sent for translation only and immediately discarded. Google does not retain this data for model training under our API agreement.
+Google (AI interpretation via Gemini Flash API): message text is sent for interpretation only and immediately discarded. Google does not retain this data for model training under our API agreement.
 Email delivery provider: for OTP verification and invite emails only.
 
 We do not sell, rent, or trade your personal data.`,
@@ -203,7 +203,7 @@ No system is 100% secure. In the event of a data breach affecting your rights, w
       },
       {
         title: '2. The Service',
-        text: `Preter provides a real-time multilingual messaging service including text, voice, image, file sharing, and WebRTC video/audio calls with live translation. We reserve the right to modify, suspend, or discontinue any part of the service at any time. We are not liable for any such modification, suspension, or discontinuation.`,
+        text: `Preter provides a real-time multilingual messaging service including text, voice, image, file sharing, and WebRTC video/audio calls with live interpretation. We reserve the right to modify, suspend, or discontinue any part of the service at any time. We are not liable for any such modification, suspension, or discontinuation.`,
       },
       {
         title: '3. Eligibility',
@@ -229,13 +229,13 @@ We reserve the right to suspend or terminate access for any violation, without p
       },
       {
         title: '6. User Content',
-        text: `You retain ownership of the content you send through Preter. By using the service, you grant us a limited, non-exclusive, royalty-free licence to store, transmit, and translate your content solely for the purpose of delivering the service. This licence terminates when you delete the content or your account.
+        text: `You retain ownership of the content you send through Preter. By using the service, you grant us a limited, non-exclusive, royalty-free licence to store, transmit, and interpret your content solely for the purpose of delivering the service. This licence terminates when you delete the content or your account.
 
 You are solely responsible for the content you send. We do not pre-screen or moderate messages.`,
       },
       {
-        title: '7. Translation Disclaimer',
-        text: `Preter uses AI-powered translation (Google Gemini). Translations are provided "as-is" and may not be perfectly accurate. We make no warranty regarding the accuracy, completeness, or reliability of any translation. Do not rely on Preter translations for legal, medical, safety-critical, or other high-stakes communications.`,
+        title: '7. Interpretation Disclaimer',
+        text: `Preter uses AI-powered interpretation (Google Gemini). Interpretations are provided "as-is" and may not be perfectly accurate. We make no warranty regarding the accuracy, completeness, or reliability of any interpretation. Do not rely on Preter interpretations for legal, medical, safety-critical, or other high-stakes communications.`,
       },
       {
         title: '8. Voice & Video Calls',

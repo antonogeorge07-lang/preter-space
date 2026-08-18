@@ -344,7 +344,7 @@ export default function ChatView({
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center" style={{ background: 'var(--card-bg)' }}>
                 <span className="text-2xl">💬</span>
               </div>
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>Send a message to start translating</p>
+              <p className="text-sm" style={{ color: 'var(--muted)' }}>Send a message to start interpreting</p>
             </div>
           </div>
         )}
