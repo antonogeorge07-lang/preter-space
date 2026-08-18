@@ -223,7 +223,7 @@ function LanguageAlignmentSection() {
 
         {/* Subheadline */}
         <p className="text-sm sm:text-base leading-relaxed text-center max-w-2xl mx-auto mb-12" style={{ color: 'var(--muted)' }}>
-          Zero copy-pasting, zero app switching. Type in your native language, and Preter AI translates and delivers it in your recipient's target language in real time.
+          Zero copy-pasting, zero app switching. Type in your native language, and Preter AI interprets&nbsp;and delivers it in your recipient's chosen language in real time.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -473,19 +473,22 @@ export default function Landing() {
                 </p>
                 <h1 className="text-4xl sm:text-5xl xl:text-6xl font-semibold leading-[1.1] mb-5 font-heading"
                   style={{ color: 'var(--foreground)' }}>
-                  Preter.<br />Chat in any<br />language.<br />
+                  Preter<br />
+                  Communicate in Your<br />
+                  language.<br />
                   <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>AI interprets it for you.</span>
                 </h1>
-                <p className="text-sm leading-relaxed mb-6 max-w-sm" style={{ color: 'var(--muted)' }}>
-                  You write in Spanish. They read in Japanese. No copy-paste, no switching apps.
-                  Voice notes, images, and calls, all translated in one thread.
+                <p className="text-sm leading-relaxed mb-6 max-w-sm whitespace-pre-line" style={{ color: 'var(--muted)' }}>
+                  You write in Spanish. They read in Japanese.&nbsp;{"\n"}
+                  No more copy-paste, no more switching apps.&nbsp;{"\n"}
+                  Voice notes, images, and calls, all interpreted in one thread.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-6 text-xs" style={{ color: 'var(--muted)' }}>
                   <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> 50+ languages</span>
                   <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Zero-knowledge</span>
                   <span className="flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5" /> No app install</span>
-                  <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> Free to start</span>
+                  <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> Free to start for first 100</span>
                 </div>
 
                 {/* See what's included CTA */}
