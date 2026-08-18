@@ -87,15 +87,17 @@ export default function IncomingCallBanner({ currentUser, conversations, onAnswe
         {/* Pulsing ring animation */}
         <div className="absolute inset-0 rounded-2xl ring-animation pointer-events-none" />
 
-        <div className="flex items-center gap-3 p-4">
+        <div className="relative z-10 flex items-center gap-3 p-4">
           <div className="relative flex-shrink-0">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-400 flex items-center justify-center text-2xl shadow-lg">
-              {incomingCall.conv?.participant_avatar || '🧑'}
-            </div>
+            <CallAvatar
+              avatar={incomingCall.conv?.participant_avatar}
+              name={incomingCall.session.caller_name}
+              className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-400 flex items-center justify-center text-2xl shadow-lg overflow-hidden"
+            />
             <motion.div
               animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0, 0.6] }}
               transition={{ duration: 1.5, repeat: Infinity }}
-              className="absolute inset-0 rounded-2xl bg-green-400/40"
+              className="absolute inset-0 rounded-2xl bg-green-400/40 pointer-events-none"
             />
           </div>
 
