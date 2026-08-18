@@ -6,6 +6,8 @@ import { detectAndTranslate } from '@/lib/translation';
 import LiveCaptionOverlay from '@/components/chat/LiveCaptionOverlay';
 import CallAvatar from '@/components/chat/CallAvatar';
 import { toast } from '@/components/ui/use-toast';
+import { safeDisplayName } from '@/lib/displayName';
+
 
 export default function VoiceCallModal({ isOpen, onClose, conversation, currentUser, callSession: incomingSession, callType = 'audio' }) {
   const [callState, setCallState] = useState('idle'); // idle|ringing|connecting|connected|failed|ended
