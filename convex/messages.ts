@@ -137,7 +137,12 @@ export const insertMessage = mutation({
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-async function translateOnce(text: string, lang: string, apiKey: string) {
+/**
+ * Translate one text into several languages in a single AI round trip.
+ * Batching keeps gateway usage at one call per message instead of one per
+ * recipient language.
+ */
+async function translateBatch(text: string, langs: string[], apiKey: string) {
   const response = await fetch(GATEWAY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
@@ -147,9 +152,9 @@ async function translateOnce(text: string, lang: string, apiKey: string) {
         {
           role: "system",
           content:
-            `Detect the ISO 639-1 language of the user text and translate it to language code "${lang}". ` +
-            `If it is already in "${lang}", return the exact same text. ` +
-            `Respond with JSON only: {"detected":"<iso639-1>","translation":"<translated text>"}`,
+            `Detect the ISO 639-1 language of the user text, then translate it into each of these language codes: ${langs.join(", ")}. ` +
+            `If the text is already in a requested language, return it unchanged for that language. ` +
+            `Respond with JSON only: {"detected":"<iso639-1>","translations":{"<code>":"<translated text>"}}`,
         },
         { role: "user", content: text },
       ],
@@ -160,21 +165,24 @@ async function translateOnce(text: string, lang: string, apiKey: string) {
   if (!response.ok) throw new Error(`Translation failed (${response.status})`);
   const data = await response.json();
   const raw = data?.choices?.[0]?.message?.content ?? "{}";
-  let parsed: { detected?: string; translation?: string } = {};
+  let parsed: { detected?: string; translations?: Record<string, string> } = {};
   try {
     parsed = JSON.parse(raw.replace(/^```(?:json)?|```$/g, "").trim());
   } catch {
     parsed = {};
   }
-  return {
-    detected: parsed.detected || "",
-    translation: parsed.detected === lang ? text : parsed.translation || text,
-  };
+
+  const translations: Record<string, string> = {};
+  for (const lang of langs) {
+    const value = parsed.translations?.[lang];
+    translations[lang] = parsed.detected === lang ? text : value || text;
+  }
+  return { detected: parsed.detected || "", translations };
 }
 
 /**
- * Server-side translate-then-persist. Keeps the AI key in the backend and
- * fans out to every recipient language in one round trip.
+ * Server-side translate-then-persist. Cached (text, language) pairs are reused,
+ * and everything still missing is translated in one batched gateway call.
  */
 export const sendWithTranslation = action({
   args: {
@@ -190,20 +198,30 @@ export const sendWithTranslation = action({
     const translations: Record<string, string> = {};
     let detectedLanguage = "";
 
-    if (apiKey && args.text.trim()) {
+    if (args.text.trim()) {
       const langs = [...new Set(args.targetLanguages.filter(Boolean))];
-      const results = await Promise.all(
-        langs.map(async (lang) => {
-          try {
-            return { lang, ...(await translateOnce(args.text, lang, apiKey)) };
-          } catch {
-            return { lang, detected: "", translation: "" };
-          }
-        }),
-      );
-      for (const r of results) {
-        if (r.translation) translations[r.lang] = r.translation;
-        if (!detectedLanguage && r.detected) detectedLanguage = r.detected;
+      const textHash = hashText(args.text);
+
+      if (langs.length > 0) {
+        const cached = await ctx.runQuery(api.translations.getCached, { textHash, langs });
+        Object.assign(translations, cached);
+      }
+
+      const missing = langs.filter((lang) => !translations[lang]);
+      if (apiKey && missing.length > 0) {
+        try {
+          const result = await translateBatch(args.text, missing, apiKey);
+          detectedLanguage = result.detected;
+          Object.assign(translations, result.translations);
+          await ctx.runMutation(api.translations.putCached, {
+            textHash,
+            sourceText: args.text,
+            ...(result.detected ? { detectedLang: result.detected } : {}),
+            entries: result.translations,
+          });
+        } catch {
+          // Leave the message untranslated rather than blocking delivery.
+        }
       }
     }
 
