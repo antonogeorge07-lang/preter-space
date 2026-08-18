@@ -82,7 +82,7 @@ function ChatMockup() {
         <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm" style={{ background: 'var(--accent-pink)' }}>🌍</div>
         <div>
           <p className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>Global Team</p>
-          <p className="text-[10px]" style={{ color: 'var(--muted)' }}>3 languages · live translation on</p>
+          <p className="text-[10px]" style={{ color: 'var(--muted)' }}>3 languages · live interpretation on</p>
         </div>
         <div className="ml-auto flex items-center gap-1">
           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -199,12 +199,12 @@ function LanguageAlignmentSection() {
     {
       icon: <Eye className="w-4 h-4" />,
       title: 'Original Text Peek',
-      detail: 'Flip between the translated message and the original source text with a single tap.',
+      detail: 'Flip between the interpreted message and the original source text with a single tap.',
     },
     {
       icon: <Sparkles className="w-4 h-4" />,
       title: 'AI-Powered Translation',
-      detail: 'Server-side translation fills in missing languages so messages arrive ready to read.',
+      detail: 'Server-side interpretation fills in missing languages so messages arrive ready to read.',
     },
   ];
 
@@ -312,7 +312,7 @@ function LanguageAlignmentSection() {
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] sm:text-[11px] font-medium"
                   style={{ background: 'var(--accent-pink)', color: 'var(--primary)' }}>
                   <Zap className="w-3 h-3" />
-                  Live Alignment Active · 100ms Latency
+                  Live Alignment Active · 3.25ms Latency
                 </div>
               </div>
             </div>
@@ -480,8 +480,8 @@ export default function Landing() {
                 </h1>
                 <p className="text-sm leading-relaxed mb-6 max-w-sm whitespace-pre-line" style={{ color: 'var(--muted)' }}>
                   You write in Spanish. They read in Japanese.&nbsp;{"\n"}
-                  No more copy-paste, no more switching apps.&nbsp;{"\n"}
-                  Voice notes, images, and calls, all interpreted in one thread.
+                  No more copy-paste. No more switching apps.&nbsp;{"\n"}
+                  Voice notes and messages, all interpreted in one thread.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-6 text-xs" style={{ color: 'var(--muted)' }}>
