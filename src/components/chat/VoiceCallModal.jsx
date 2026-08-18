@@ -4,6 +4,8 @@ import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Video, VideoOff, Rotate
 import { useWebRTC } from '@/lib/useWebRTC';
 import { detectAndTranslate } from '@/lib/translation';
 import LiveCaptionOverlay from '@/components/chat/LiveCaptionOverlay';
+import CallAvatar from '@/components/chat/CallAvatar';
+import { toast } from '@/components/ui/use-toast';
 
 export default function VoiceCallModal({ isOpen, onClose, conversation, currentUser, callSession: incomingSession, callType = 'audio' }) {
   const [callState, setCallState] = useState('idle'); // idle|ringing|connecting|connected|failed|ended
@@ -25,7 +27,7 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
   const otherName = isCaller
     ? (conversation?.participant_name || 'Contact')
     : (incomingSession?.caller_name || 'Contact');
-  const otherAvatar = conversation?.participant_avatar || '🧑';
+  const otherAvatar = conversation?.participant_avatar || incomingSession?.caller_avatar || null;
   const myName = currentUser?.full_name || currentUser?.email || 'Me';
   // Derive recipient language from conversation participant_languages
   const recipientLang = (() => {
@@ -180,7 +182,24 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
           });
         }
       })
-      .catch(() => setCallState('failed'));
+      .catch((err) => {
+        const denied = err?.name === 'NotAllowedError' || err?.name === 'SecurityError';
+        const missing = err?.name === 'NotFoundError';
+        toast({
+          title: denied
+            ? 'Microphone access denied'
+            : missing
+              ? 'No microphone found'
+              : 'Could not answer the call',
+          description: denied
+            ? `Allow microphone${isVideo ? ' and camera' : ''} access in your browser settings, then try again.`
+            : missing
+              ? 'Connect a microphone and try again.'
+              : 'Something went wrong setting up the connection. Please try again.',
+          variant: 'destructive',
+        });
+        setCallState('failed');
+      });
   };
 
   const handleHangUp = async () => {
@@ -270,9 +289,12 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
             {/* Avatar - only shown for audio */}
             {!isVideo && (
               <>
-                <div className={`w-24 h-24 rounded-3xl bg-white/20 flex items-center justify-center text-5xl shadow-inner ${callState === 'ringing' && !isCaller ? 'animate-bounce' : ''}`}>
-                  {otherAvatar}
-                </div>
+                <CallAvatar
+                  avatar={otherAvatar}
+                  name={otherName}
+                  iconClassName="w-10 h-10"
+                  className={`w-24 h-24 rounded-3xl bg-white/20 flex items-center justify-center text-5xl shadow-inner overflow-hidden ${callState === 'ringing' && !isCaller ? 'animate-bounce' : ''}`}
+                />
                 <div className="text-center">
                   <p className="text-white font-bold text-xl">{otherName}</p>
                   <p className="text-white/70 text-sm mt-1 flex items-center gap-1 justify-center">
@@ -307,15 +329,15 @@ export default function VoiceCallModal({ isOpen, onClose, conversation, currentU
                 // Incoming - show decline + answer
                 <>
                   <div className="flex flex-col items-center gap-1">
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={handleDecline}
-                      className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/40">
+                    <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={handleDecline}
+                      className="relative z-50 pointer-events-auto w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/40">
                       <PhoneOff className="w-7 h-7 text-white" />
                     </motion.button>
                     <span className="text-white/60 text-xs">Decline</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={handleAnswer}
-                      className="w-16 h-16 rounded-full bg-green-400 flex items-center justify-center shadow-lg shadow-green-400/40">
+                    <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={handleAnswer}
+                      className="relative z-50 pointer-events-auto w-16 h-16 rounded-full bg-green-400 flex items-center justify-center shadow-lg shadow-green-400/40">
                       {isVideo ? <Video className="w-7 h-7 text-white" /> : <Phone className="w-7 h-7 text-white" />}
                     </motion.button>
                     <span className="text-white/60 text-xs">Answer</span>
