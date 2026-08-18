@@ -14,7 +14,7 @@ export const Route = createFileRoute("/landing")({
       { property: "og:title", content: "Preter: Talk to anyone, in any language" },
       {
         property: "og:description",
-        content: "Multilingual chat with real-time translation, voice notes, and calls.",
+        content: "Multilingual chat with real-time interpretation, voice notes, and calls.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

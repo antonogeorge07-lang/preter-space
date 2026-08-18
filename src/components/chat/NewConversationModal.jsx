@@ -154,7 +154,7 @@ export default function NewConversationModal({ isOpen, onClose, onCreate, curren
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground font-medium mb-1.5 flex items-center gap-1">
-                    <Globe className="w-3 h-3" /> Their language (translate my messages to)
+                    <Globe className="w-3 h-3" /> Their language (interpret my messages to)
                   </label>
                   <Select value={lang} onValueChange={setLang}>
                     <SelectTrigger className="w-full rounded-2xl h-11" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>

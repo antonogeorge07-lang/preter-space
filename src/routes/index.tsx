@@ -9,12 +9,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Preter translates your conversations in real time, so you can chat, call, and share with anyone in their own language.",
+          "Preter interprets your conversations in real time, so you can chat, call, and share with anyone in their own language.",
       },
       { property: "og:title", content: "Preter: Chat across every language" },
       {
         property: "og:description",
-        content: "Real-time translated messaging, voice notes, and calls.",
+        content: "Real-time interpreted messaging, voice notes, and calls.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

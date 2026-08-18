@@ -197,7 +197,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
 
             {isTranslating && (
               <p className="text-xs mt-1.5 flex items-center gap-1 text-muted-foreground/60">
-                <Loader2 className="w-3 h-3 animate-spin" /> Translating...
+                <Loader2 className="w-3 h-3 animate-spin" /> Interpreting...
               </p>
             )}
 
@@ -242,7 +242,7 @@ export default function TextMessage({ message, preferredLang, isTranslating, onD
             className="mt-1 flex items-center gap-1 text-[10px] transition-colors hover:opacity-80"
             style={{ color: 'var(--muted)' }}>
             <Languages className="w-3 h-3" />
-            {showOriginal ? 'Show translation' : 'Show original'}
+            {showOriginal ? 'Show interpretation' : 'Show original'}
           </button>
         )}
       </div>

@@ -39,7 +39,7 @@ export default function VideoMessageBubble({ message, preferredLang }) {
 
             {hasTranslation && (
               <div className="absolute top-4 right-4 px-3 py-1 bg-white/80 backdrop-blur-md text-primary text-xs rounded-2xl flex items-center gap-1">
-                <Globe className="w-3 h-3" /> Translated
+                <Globe className="w-3 h-3" /> Interpreted
               </div>
             )}
           </div>

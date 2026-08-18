@@ -195,7 +195,7 @@ export default function VoiceRecorder({ isOpen, onClose, onVoiceNoteReady, targe
                 <div>
                   <p className="font-semibold text-sm font-heading" style={{ color: 'var(--foreground)' }}>Voice Note</p>
                   <p className="text-xs flex items-center gap-1" style={{ color: 'var(--muted)' }}>
-                    <Globe className="w-3 h-3" /> Auto-translated
+                    <Globe className="w-3 h-3" /> Auto-interpreted
                   </p>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export default function VoiceRecorder({ isOpen, onClose, onVoiceNoteReady, targe
                   style={{ background: 'var(--glass-bg-subtle)', color: 'var(--primary)', border: '1px solid var(--card-border)' }}
                 >
                   <Languages className="w-3.5 h-3.5" />
-                  {showTranslated ? "Original" : "Translated"}
+                  {showTranslated ? "Original" : "Interpreted"}
                 </button>
                 <button
                   onClick={onClose}
@@ -301,7 +301,7 @@ export default function VoiceRecorder({ isOpen, onClose, onVoiceNoteReady, targe
             </div>
 
             <p className="text-center text-[10px] mt-4" style={{ color: 'var(--muted)', opacity: 0.6 }}>
-              Your voice will be automatically transcribed and translated
+              Your voice will be automatically transcribed and interpreted
             </p>
           </motion.div>
         </motion.div>

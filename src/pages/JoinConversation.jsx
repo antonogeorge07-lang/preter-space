@@ -218,7 +218,7 @@ export default function JoinConversation() {
                 {senderName} invited you
               </h1>
               <p className="text-sm mt-2" style={{ color: 'var(--muted)' }}>
-                Chat in any language. Forge translates in real-time.
+                Chat in any language. Forge interprets in real-time.
               </p>
             </div>
 
@@ -231,7 +231,7 @@ export default function JoinConversation() {
                 <div>
                   <div className="text-xs font-semibold" style={{ color: 'var(--foreground)' }}>{senderName}</div>
                   <div className="text-[10px] text-emerald-600 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Translating in real-time
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> Interpreting in real-time
                   </div>
                 </div>
               </div>
@@ -368,7 +368,7 @@ export default function JoinConversation() {
                 What language do you think in?
               </h2>
               <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-                Forge will translate {senderName}'s messages into this language for you.
+                Forge will interpret {senderName}'s messages into this language for you.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2">

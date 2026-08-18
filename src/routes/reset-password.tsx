@@ -5,9 +5,9 @@ export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
       { title: "Choose a new password | Preter" },
-      { name: "description", content: "Choose a new password for your Preter account and get straight back to your translated conversations, voice notes, and calls." },
+      { name: "description", content: "Choose a new password for your Preter account and get straight back to your interpreted conversations, voice notes, and calls." },
       { property: "og:title", content: "Choose a new password | Preter" },
-      { property: "og:description", content: "Choose a new password for your Preter account and get straight back to your translated conversations, voice notes, and calls." },
+      { property: "og:description", content: "Choose a new password for your Preter account and get straight back to your interpreted conversations, voice notes, and calls." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
