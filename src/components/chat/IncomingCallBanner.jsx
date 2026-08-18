@@ -4,6 +4,7 @@ import { Phone, PhoneOff, Video } from 'lucide-react';
 import { useIncomingCalls } from '@/hooks/useConvexChat';
 import { convexChat } from '@/lib/convexChat';
 import CallAvatar from '@/components/chat/CallAvatar';
+import { safeDisplayName, nameFromEmail } from '@/lib/displayName';
 
 export default function IncomingCallBanner({ currentUser, conversations, onAnswer }) {
   const [dismissedIds, setDismissedIds] = useState([]);
@@ -20,7 +21,7 @@ export default function IncomingCallBanner({ currentUser, conversations, onAnswe
           ...call,
           id: call._id,
           call_type: call.isVideo ? 'video' : 'audio',
-          caller_name: call.callerName || call.callerId,
+          caller_name: safeDisplayName(call.callerName, nameFromEmail(call.callerId) || 'Contact'),
         },
         conv,
       }
