@@ -14,8 +14,11 @@ import type * as conversations from "../conversations.js";
 import type * as files from "../files.js";
 import type * as messages from "../messages.js";
 import type * as presence from "../presence.js";
+import type * as push from "../push.js";
+import type * as pushData from "../pushData.js";
 import type * as reactions from "../reactions.js";
 import type * as readReceipts from "../readReceipts.js";
+import type * as translations from "../translations.js";
 import type * as users from "../users.js";
 
 import type {
@@ -31,8 +34,11 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   messages: typeof messages;
   presence: typeof presence;
+  push: typeof push;
+  pushData: typeof pushData;
   reactions: typeof reactions;
   readReceipts: typeof readReceipts;
+  translations: typeof translations;
   users: typeof users;
 }>;
 
