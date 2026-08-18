@@ -66,6 +66,12 @@ export const convexChat = {
   toggleBlock: (email, targetEmail) =>
     client().mutation(convexApi.users.toggleBlockByEmail, { email, targetEmail }),
   reportConversation: (args) => client().mutation(convexApi.conversations.reportConversation, args),
+
+  // ── background push ─────────────────────────────────────────────────────
+  getPushPublicKey: () => client().query(convexApi.pushData.publicKey, {}),
+  savePushSubscription: (args) => client().mutation(convexApi.pushData.subscribe, args),
+  removePushSubscription: (endpoint) =>
+    client().mutation(convexApi.pushData.unsubscribe, { endpoint }),
 };
 
 export default convexChat;

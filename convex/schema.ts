@@ -118,4 +118,26 @@ export default defineSchema({
   })
     .index("by_callee", ["calleeId"])
     .index("by_caller", ["callerId"]),
+
+  // --- translation cache: one row per (source text hash, target language) ---
+  translation_cache: defineTable({
+    textHash: v.string(),
+    targetLang: v.string(),
+    translation: v.string(),
+    sourceText: v.string(),
+    detectedLang: v.optional(v.string()),
+    createdAt: v.number(),
+    lastUsedAt: v.number(),
+  }).index("by_hash_lang", ["textHash", "targetLang"]),
+
+  // --- background web push subscriptions ---
+  push_subscriptions: defineTable({
+    userId: v.string(),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
 });

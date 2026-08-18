@@ -83,6 +83,14 @@ export const convexApi = {
     >("messages:update"),
     remove: fn.mutation<{ messageId: string }, null>("messages:remove"),
   },
+  pushData: {
+    publicKey: fn.query<Record<string, never>, string | null>("pushData:publicKey"),
+    subscribe: fn.mutation<
+      { userId: string; endpoint: string; p256dh: string; auth: string },
+      string
+    >("pushData:subscribe"),
+    unsubscribe: fn.mutation<{ endpoint: string }, null>("pushData:unsubscribe"),
+  },
   files: {
     generateUploadUrl: fn.mutation<Record<string, never>, string>("files:generateUploadUrl"),
     getUrl: fn.query<{ storageId: string }, string | null>("files:getUrl"),

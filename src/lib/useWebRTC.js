@@ -5,28 +5,35 @@
  */
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { convexChat } from '@/lib/convexChat';
+import { getIceServers } from '@/lib/ice.functions';
 
-// STUN + free public TURN servers for firewall traversal
-const ICE_SERVERS = [
+// Last-resort config if the server call fails (STUN only + open relay).
+const FALLBACK_ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun.cloudflare.com:3478' },
   {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
 ];
+
+// TURN credentials are minted server-side and cached for the session so every
+// call reuses one fetch.
+let iceServersPromise = null;
+async function resolveIceServers() {
+  if (!iceServersPromise) {
+    iceServersPromise = getIceServers()
+      .then((res) => (res?.iceServers?.length ? res.iceServers : FALLBACK_ICE_SERVERS))
+      .catch(() => FALLBACK_ICE_SERVERS);
+  }
+  return iceServersPromise;
+}
 
 export function useWebRTC({ onRemoteStream, onStateChange }) {
   const pcRef = useRef(null);
@@ -62,8 +69,11 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
     setConnState('idle');
   }, [stopWatch]);
 
-  const createPC = useCallback((role, myKey) => {
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 });
+  const createPC = useCallback((role, myKey, iceServers) => {
+    const pc = new RTCPeerConnection({
+      iceServers: iceServers || FALLBACK_ICE_SERVERS,
+      iceCandidatePoolSize: 10,
+    });
 
     pc.ontrack = (e) => { if (onRemoteStream) onRemoteStream(e.streams[0]); };
 
@@ -145,11 +155,12 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
       ? { audio: true, video: { width: 1280, height: 720, facingMode: 'user' } }
       : { audio: true };
 
+    const iceServers = await resolveIceServers();
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     localStreamRef.current = stream;
 
     const myKey = currentUser?.id;
-    const pc = createPC('caller', myKey);
+    const pc = createPC('caller', myKey, iceServers);
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
     const offer = await pc.createOffer({
@@ -188,11 +199,12 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
       ? { audio: true, video: { width: 1280, height: 720, facingMode: 'user' } }
       : { audio: true };
 
+    const iceServers = await resolveIceServers();
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     localStreamRef.current = stream;
 
     const myKey = currentUser?.id;
-    const pc = createPC('callee', myKey);
+    const pc = createPC('callee', myKey, iceServers);
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
     callIdRef.current = incomingSession.id;

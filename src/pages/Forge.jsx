@@ -95,8 +95,8 @@ export default function Forge() {
 
   // ── Register push notifications once authenticated ───────────────────────
   useEffect(() => {
-    if (authUser) registerPushNotifications();
-  }, [authUser?.id]);
+    if (authUser) registerPushNotifications(myKey);
+  }, [authUser?.id, myKey]);
 
   // ── Register device session + poll for remote kill ───────────────────────
   useEffect(() => {
