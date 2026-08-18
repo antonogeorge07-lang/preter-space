@@ -318,6 +318,16 @@ function LanguageAlignmentSection() {
             </div>
           </motion.div>
         </div>
+
+        {/* Positioning statement */}
+        <div className="mt-16 text-center max-w-2xl mx-auto">
+          <h3 className="text-xl sm:text-2xl font-semibold mb-3 font-heading" style={{ color: 'var(--foreground)' }}>
+            Not just translation. Interpretation.
+          </h3>
+          <p className="text-sm sm:text-base leading-relaxed" style={{ color: 'var(--muted)' }}>
+            Words are only part of a conversation. Preter interprets the rest.
+          </p>
+        </div>
       </div>
     </section>
   );
