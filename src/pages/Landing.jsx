@@ -473,15 +473,12 @@ export default function Landing() {
                 </p>
                 <h1 className="text-4xl sm:text-5xl xl:text-6xl font-semibold leading-[1.1] mb-5 font-heading"
                   style={{ color: 'var(--foreground)' }}>
-                  Preter<br />
-                  Communicate in Your<br />
-                  language.<br />
-                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>AI interprets it for you.</span>
+                  Speak freely.<br />
+                  Be understood.<br />
+                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Your AI interpreter for every conversation.</span>
                 </h1>
-                <p className="text-sm leading-relaxed mb-6 max-w-sm whitespace-pre-line" style={{ color: 'var(--muted)' }}>
-                  You write in Spanish. They read in Japanese.&nbsp;{"\n"}
-                  No more copy-paste. No more switching apps.&nbsp;{"\n"}
-                  Voice notes and messages, all interpreted in one thread.
+                <p className="text-sm leading-relaxed mb-6 max-w-sm" style={{ color: 'var(--muted)' }}>
+                  Speak naturally in your language. Preter interprets your message and delivers it in theirs.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-6 text-xs" style={{ color: 'var(--muted)' }}>
