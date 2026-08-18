@@ -8,11 +8,10 @@ import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 // Configuration
-const SITE_NAME = 'preter-space'
+const SITE_NAME = 'Preter'
 const SENDER_DOMAIN = 'notify.invictusfaith.studio'
-const ROOT_DOMAIN = 'invictusfaith.studio'
 const FROM_DOMAIN = 'notify.invictusfaith.studio'
-const SITE_URL = `https://${ROOT_DOMAIN}`
+const SITE_URL = 'https://preter.space'
 
 let cached: ReturnType<typeof createAuthEmailHandler> | null = null
 
