@@ -1,13 +1,47 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
+
+/** Keep `conversation_members` in sync with a conversation's participant list. */
+async function syncMembers(
+  ctx: MutationCtx,
+  conversationId: Id<"conversations">,
+  participantIds: string[],
+) {
+  const existing = await ctx.db
+    .query("conversation_members")
+    .withIndex("by_conversation", (q) => q.eq("conversationId", conversationId))
+    .collect();
+  const want = new Set(participantIds);
+  const have = new Set(existing.map((m) => m.userId));
+  for (const row of existing) {
+    if (!want.has(row.userId)) await ctx.db.delete(row._id);
+  }
+  for (const userId of want) {
+    if (!have.has(userId)) await ctx.db.insert("conversation_members", { conversationId, userId });
+  }
+}
 
 export const getForUser = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
-    const allConversations = await ctx.db.query("conversations").collect();
-    return allConversations
-      .filter((c) => c.participantIds.includes(args.userId))
-      .sort((a, b) => (b.lastMessageTime ?? 0) - (a.lastMessageTime ?? 0));
+    const memberships = await ctx.db
+      .query("conversation_members")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .take(500);
+
+    let docs = (
+      await Promise.all(memberships.map((m) => ctx.db.get(m.conversationId)))
+    ).filter((c): c is NonNullable<typeof c> => !!c);
+
+    // Fallback for conversations created before membership rows existed.
+    if (docs.length === 0) {
+      const all = await ctx.db.query("conversations").take(2000);
+      docs = all.filter((c) => c.participantIds.includes(args.userId));
+    }
+
+    return docs.sort((a, b) => (b.lastMessageTime ?? 0) - (a.lastMessageTime ?? 0));
   },
 });
 
@@ -19,7 +53,7 @@ export const get = query({
 export const getByInviteCode = query({
   args: { inviteCode: v.string() },
   handler: async (ctx, args) => {
-    const all = await ctx.db.query("conversations").collect();
+    const all = await ctx.db.query("conversations").take(2000);
     return all.find((c) => c.inviteCode === args.inviteCode) ?? null;
   },
 });
@@ -50,10 +84,12 @@ export const create = mutation({
     participantIds: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("conversations", {
+    const conversationId = await ctx.db.insert("conversations", {
       ...args,
       lastMessageTime: args.lastMessageTime ?? Date.now(),
     });
+    await syncMembers(ctx, conversationId, args.participantIds);
+    return conversationId;
   },
 });
 
@@ -64,6 +100,9 @@ export const update = mutation({
     const clean = Object.fromEntries(Object.entries(patch).filter(([, v2]) => v2 !== undefined));
     if (Object.keys(clean).length === 0) return conversationId;
     await ctx.db.patch(conversationId, clean);
+    if (Array.isArray(patch.participantIds)) {
+      await syncMembers(ctx, conversationId, patch.participantIds);
+    }
     return conversationId;
   },
 });
@@ -88,6 +127,11 @@ export const remove = mutation({
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
       .collect();
     for (const r of receipts) await ctx.db.delete(r._id);
+    const members = await ctx.db
+      .query("conversation_members")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+      .collect();
+    for (const m of members) await ctx.db.delete(m._id);
     await ctx.db.delete(args.conversationId);
     return null;
   },
@@ -108,5 +152,32 @@ export const reportConversation = mutation({
       reason: args.reason,
       createdAt: Date.now(),
     });
+  },
+});
+
+/**
+ * One-time backfill: create membership rows for conversations that predate
+ * `conversation_members`. Safe to run repeatedly.
+ */
+export const backfillMembers = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("conversations").take(5000);
+    let created = 0;
+    for (const c of all) {
+      for (const userId of c.participantIds) {
+        const existing = await ctx.db
+          .query("conversation_members")
+          .withIndex("by_conversation_user", (q) =>
+            q.eq("conversationId", c._id).eq("userId", userId),
+          )
+          .first();
+        if (!existing) {
+          await ctx.db.insert("conversation_members", { conversationId: c._id, userId });
+          created++;
+        }
+      }
+    }
+    return { conversations: all.length, created };
   },
 });

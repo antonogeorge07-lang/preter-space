@@ -7,7 +7,7 @@ export const listForConversation = query({
     return await ctx.db
       .query("presence")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
-      .collect();
+      .take(100);
   },
 });
 
