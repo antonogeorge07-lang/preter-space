@@ -1,6 +1,7 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
+import { hashText } from "./translations";
 
 export const list = query({
   args: { conversationId: v.id("conversations") },
@@ -78,6 +79,14 @@ export const send = mutation({
     });
 
     await ctx.db.patch(args.conversationId, { lastMessageTime: Date.now() });
+
+    // Background push to the other participants (no-op without VAPID keys).
+    await ctx.scheduler.runAfter(0, api.push.notifyMessage, {
+      conversationId: args.conversationId,
+      senderId: args.senderId,
+      senderName: (args.meta as { sender_name?: string } | undefined)?.sender_name,
+      body: args.text || "Sent you a message",
+    });
 
     return messageId;
   },
