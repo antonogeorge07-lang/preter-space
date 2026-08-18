@@ -69,8 +69,11 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
     setConnState('idle');
   }, [stopWatch]);
 
-  const createPC = useCallback((role, myKey) => {
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 10 });
+  const createPC = useCallback((role, myKey, iceServers) => {
+    const pc = new RTCPeerConnection({
+      iceServers: iceServers || FALLBACK_ICE_SERVERS,
+      iceCandidatePoolSize: 10,
+    });
 
     pc.ontrack = (e) => { if (onRemoteStream) onRemoteStream(e.streams[0]); };
 
@@ -152,11 +155,12 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
       ? { audio: true, video: { width: 1280, height: 720, facingMode: 'user' } }
       : { audio: true };
 
+    const iceServers = await resolveIceServers();
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     localStreamRef.current = stream;
 
     const myKey = currentUser?.id;
-    const pc = createPC('caller', myKey);
+    const pc = createPC('caller', myKey, iceServers);
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
     const offer = await pc.createOffer({
@@ -195,11 +199,12 @@ export function useWebRTC({ onRemoteStream, onStateChange }) {
       ? { audio: true, video: { width: 1280, height: 720, facingMode: 'user' } }
       : { audio: true };
 
+    const iceServers = await resolveIceServers();
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     localStreamRef.current = stream;
 
     const myKey = currentUser?.id;
-    const pc = createPC('callee', myKey);
+    const pc = createPC('callee', myKey, iceServers);
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
     callIdRef.current = incomingSession.id;
