@@ -33,6 +33,8 @@ export default function IncomingCallBanner({ currentUser, conversations, onAnswe
     ringingForRef.current = call._id;
     try {
       const ctx = new AudioContext();
+      ctx.resume?.().catch(() => {});
+
       const playBeep = (freq, t) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
