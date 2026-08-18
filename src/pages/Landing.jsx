@@ -218,12 +218,12 @@ function LanguageAlignmentSection() {
 
         {/* Headline */}
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-center mb-4 font-heading" style={{ color: 'var(--foreground)' }}>
-          Talk in Your Language. They Read in Theirs.
+          One conversation. Everyone speaks their language.
         </h2>
 
         {/* Subheadline */}
         <p className="text-sm sm:text-base leading-relaxed text-center max-w-2xl mx-auto mb-12" style={{ color: 'var(--muted)' }}>
-          Zero copy-pasting, zero app switching. Type in your native language, and Preter AI interprets&nbsp;and delivers it in your recipient's chosen language in real time.
+          Preter automatically interprets each message into the language preferred by the recipient — without copy-pasting or switching apps.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
