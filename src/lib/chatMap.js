@@ -2,14 +2,17 @@
  * Mapping between Convex documents and the shapes the chat UI components use.
  * Convex identifies people by email, which is what `participantIds` / `senderId` hold.
  */
+import { safeDisplayName, nameFromEmail } from '@/lib/displayName';
 
 export const userKey = (user) => user?.email || null;
 
 /** Convex conversation doc -> UI conversation */
 export function toUiConversation(doc, myKey) {
   if (!doc) return null;
-  const names = doc.participantNames || [];
+  const rawNames = doc.participantNames || [];
   const ids = doc.participantIds || [];
+  // Never let an avatar URL (or other junk) reach a text slot.
+  const names = ids.map((id, i) => safeDisplayName(rawNames[i], nameFromEmail(id) || 'Contact'));
   const otherIdx = ids.findIndex((id) => id !== myKey);
   const otherName = otherIdx >= 0 ? names[otherIdx] : undefined;
   return {
@@ -18,8 +21,11 @@ export function toUiConversation(doc, myKey) {
     created_by_id: doc.creatorId,
     participant_ids: ids,
     participant_names: names,
-    participant_name: doc.isGroup ? doc.title || 'Group' : otherName || doc.title || 'Contact',
+    participant_name: doc.isGroup
+      ? safeDisplayName(doc.title, 'Group')
+      : otherName || safeDisplayName(doc.title, 'Contact'),
     participant_avatar: doc.avatarUrl || null,
+
     participant_languages: JSON.stringify(doc.participantLanguages || {}),
     preferred_language: doc.preferredLanguage || 'en',
     last_message_preview: doc.lastMessagePreview || '',

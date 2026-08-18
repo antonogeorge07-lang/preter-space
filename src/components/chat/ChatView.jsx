@@ -8,6 +8,7 @@ import VideoMessageBubble from '@/components/chat/VideoMessageBubble';
 import MessageInput from '@/components/chat/MessageInput';
 import LanguageSettings from '@/components/chat/LanguageSettings';
 import ThemeToggle from '@/components/chat/ThemeToggle';
+import { looksLikeUrl } from '@/lib/displayName';
 import TypingIndicator from '@/components/chat/TypingIndicator.jsx';
 import SmartReplies from '@/components/chat/SmartReplies';
 import ConversationSummary from '@/components/chat/ConversationSummary';
@@ -170,8 +171,10 @@ export default function ChatView({
           }}
           className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold overflow-hidden hover:opacity-80 transition-opacity"
           style={{ background: 'var(--glass-border)', color: 'var(--primary)' }}>
-          {conversation?.participant_avatar
+          {looksLikeUrl(conversation?.participant_avatar)
             ? <img src={conversation.participant_avatar} className="w-full h-full object-cover" alt="" />
+            : conversation?.participant_avatar && [...conversation.participant_avatar.trim()].length <= 3
+              ? conversation.participant_avatar.trim()
             : conversation?.is_group
               ? <Users className="w-4 h-4" />
               : conversation?.participant_name?.[0]?.toUpperCase()}
