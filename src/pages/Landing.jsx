@@ -493,7 +493,7 @@ export default function Landing() {
 
                 <div className="flex flex-wrap gap-3 mb-6 text-xs" style={{ color: 'var(--muted)' }}>
                   <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> 50+ languages</span>
-                  <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Zero-knowledge</span>
+                  <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Privacy first</span>
                   <span className="flex items-center gap-1.5"><MessageSquare className="w-3.5 h-3.5" /> No app install</span>
                   <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> Free to start for first 100</span>
                 </div>
