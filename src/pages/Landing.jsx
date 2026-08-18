@@ -218,12 +218,12 @@ function LanguageAlignmentSection() {
 
         {/* Headline */}
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-center mb-4 font-heading" style={{ color: 'var(--foreground)' }}>
-          Talk in Your Language. They Read in Theirs.
+          One conversation. Everyone speaks their language.
         </h2>
 
         {/* Subheadline */}
         <p className="text-sm sm:text-base leading-relaxed text-center max-w-2xl mx-auto mb-12" style={{ color: 'var(--muted)' }}>
-          Zero copy-pasting, zero app switching. Type in your native language, and Preter AI interprets&nbsp;and delivers it in your recipient's chosen language in real time.
+          Preter automatically interprets each message into the language preferred by the recipient — without copy-pasting or switching apps.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -317,6 +317,16 @@ function LanguageAlignmentSection() {
               </div>
             </div>
           </motion.div>
+        </div>
+
+        {/* Positioning statement */}
+        <div className="mt-16 text-center max-w-2xl mx-auto">
+          <h3 className="text-xl sm:text-2xl font-semibold mb-3 font-heading" style={{ color: 'var(--foreground)' }}>
+            Not just translation. Interpretation.
+          </h3>
+          <p className="text-sm sm:text-base leading-relaxed" style={{ color: 'var(--muted)' }}>
+            Words are only part of a conversation. Preter interprets the rest.
+          </p>
         </div>
       </div>
     </section>
@@ -473,15 +483,12 @@ export default function Landing() {
                 </p>
                 <h1 className="text-4xl sm:text-5xl xl:text-6xl font-semibold leading-[1.1] mb-5 font-heading"
                   style={{ color: 'var(--foreground)' }}>
-                  Preter<br />
-                  Communicate in Your<br />
-                  language.<br />
-                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>AI interprets it for you.</span>
+                  Speak freely.<br />
+                  Be understood.<br />
+                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Your AI interpreter for every conversation.</span>
                 </h1>
-                <p className="text-sm leading-relaxed mb-6 max-w-sm whitespace-pre-line" style={{ color: 'var(--muted)' }}>
-                  You write in Spanish. They read in Japanese.&nbsp;{"\n"}
-                  No more copy-paste. No more switching apps.&nbsp;{"\n"}
-                  Voice notes and messages, all interpreted in one thread.
+                <p className="text-sm leading-relaxed mb-6 max-w-sm" style={{ color: 'var(--muted)' }}>
+                  Speak naturally in your language. Preter interprets your message and delivers it in theirs.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-6 text-xs" style={{ color: 'var(--muted)' }}>
