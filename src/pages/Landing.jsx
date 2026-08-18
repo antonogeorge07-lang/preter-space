@@ -223,7 +223,7 @@ function LanguageAlignmentSection() {
 
         {/* Subheadline */}
         <p className="text-sm sm:text-base leading-relaxed text-center max-w-2xl mx-auto mb-12" style={{ color: 'var(--muted)' }}>
-          Preter automatically interprets each message into the language preferred by the recipient — without copy-pasting or switching apps.
+          Preter automatically interprets each message into the language preferred by the recipient without copy-pasting or switching apps.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
