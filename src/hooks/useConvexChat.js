@@ -154,7 +154,7 @@ export function useChatPresence({ conversationId, key, otherKey }) {
         isTyping,
       }).catch(() => {});
     ping();
-    const interval = setInterval(() => ping(false), 25000);
+    const interval = setInterval(() => ping(false), 45000);
     return () => {
       clearInterval(interval);
       clearTimeout(typingTimerRef.current);

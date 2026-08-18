@@ -15,16 +15,30 @@ export const getByEmail = query({
 export const search = query({
   args: { term: v.string(), excludeEmail: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    const term = args.term.trim().toLowerCase();
+    const term = args.term.trim();
     if (term.length < 2) return [];
-    const all = await ctx.db.query("users").take(500);
-    return all
-      .filter((u) => u.email !== args.excludeEmail)
-      .filter(
-        (u) =>
-          (u.name || "").toLowerCase().includes(term) || u.email.toLowerCase().includes(term),
-      )
-      .slice(0, 20);
+
+    // Search indexes keep this O(matches) instead of scanning the user table.
+    const [byName, byEmail] = await Promise.all([
+      ctx.db
+        .query("users")
+        .withSearchIndex("search_name", (q) => q.search("name", term))
+        .take(20),
+      ctx.db
+        .query("users")
+        .withSearchIndex("search_email", (q) => q.search("email", term))
+        .take(20),
+    ]);
+
+    const seen = new Set<string>();
+    const out = [];
+    for (const u of [...byName, ...byEmail]) {
+      if (u.email === args.excludeEmail || seen.has(u._id)) continue;
+      seen.add(u._id);
+      out.push(u);
+      if (out.length >= 20) break;
+    }
+    return out;
   },
 });
 

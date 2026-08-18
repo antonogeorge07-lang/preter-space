@@ -10,7 +10,10 @@ export default defineSchema({
     isOnline: v.optional(v.boolean()),
     lastSeen: v.optional(v.number()),
     blockedUsers: v.optional(v.array(v.string())),
-  }).index("by_email", ["email"]),
+  })
+    .index("by_email", ["email"])
+    .searchIndex("search_name", { searchField: "name" })
+    .searchIndex("search_email", { searchField: "email" }),
 
   conversations: defineTable({
     title: v.optional(v.string()),
@@ -32,6 +35,16 @@ export default defineSchema({
     inviteCode: v.optional(v.string()),
     inviteOpen: v.optional(v.boolean()),
   }),
+
+  // Membership rows keep "my conversations" an indexed lookup instead of a
+  // full-table scan, which is what breaks first as user count grows.
+  conversation_members: defineTable({
+    conversationId: v.id("conversations"),
+    userId: v.string(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_conversation", ["conversationId"])
+    .index("by_conversation_user", ["conversationId", "userId"]),
 
   messages: defineTable({
     conversationId: v.id("conversations"),

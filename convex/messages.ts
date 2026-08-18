@@ -9,7 +9,7 @@ export const list = query({
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
       .order("asc")
-      .collect();
+      .take(500);
   },
 });
 

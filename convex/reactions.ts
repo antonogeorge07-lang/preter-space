@@ -22,9 +22,10 @@ export const listForConversation = query({
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId));
     // Only the messages currently on screen need their reactions loaded.
-    const messages = args.limit
-      ? await messagesQuery.order("desc").take(Math.min(Math.max(args.limit, 1), 500))
-      : await messagesQuery.collect();
+    // Always bounded: reactions only matter for the messages on screen.
+    const messages = await messagesQuery
+      .order("desc")
+      .take(Math.min(Math.max(args.limit ?? 40, 1), 500));
 
     const out = [];
     for (const m of messages) {
