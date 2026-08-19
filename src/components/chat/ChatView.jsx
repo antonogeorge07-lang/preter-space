@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Globe, Images, Phone, Video, Search, X, MoreVertical, Users, Loader2 } from 'lucide-react';
+import { ArrowLeft, Globe, Images, Phone, Video, Search, X, MoreVertical, Users, Loader2, Share2, UserPlus } from 'lucide-react';
 import TextMessage from '@/components/chat/TextMessage';
 import SwipeableMessage from '@/components/chat/SwipeableMessage';
 import VoiceNoteBubble from '@/components/chat/VoiceNoteBubble';
@@ -20,6 +20,8 @@ import ImageLightbox from '@/components/chat/ImageLightbox';
 import GroupManageModal from '@/components/chat/GroupManageModal';
 import FileAttachmentBubble from '@/components/chat/FileAttachmentBubble';
 import ContactProfileModal from '@/components/chat/ContactProfileModal';
+import ShareInviteModal from '@/components/chat/ShareInviteModal';
+
 import { toast } from '@/components/ui/use-toast';
 import { useChatMutations } from '@/hooks/useConvexChat';
 
@@ -48,6 +50,8 @@ export default function ChatView({
   const [lightboxSrc, setLightboxSrc] = useState(null);
   const [groupManageOpen, setGroupManageOpen] = useState(false);
   const [contactProfileUserId, setContactProfileUserId] = useState(null);
+  const [shareInviteOpen, setShareInviteOpen] = useState(false);
+
   const moreMenuRef = useRef(null);
   const [moderating, setModerating] = useState(false);
   const { toggleBlock, reportConversation: reportConversationMutation } = useChatMutations();
@@ -154,7 +158,7 @@ export default function ChatView({
   };
 
   return (
-    <div className="flex flex-col h-full w-full min-w-0 overflow-hidden">
+    <div className="flex flex-col h-full w-full max-w-full min-w-0 box-border overflow-hidden overflow-x-hidden">
       {/* Header */}
       <div className="min-h-14 sm:min-h-16 border-b px-3 sm:px-4 flex items-center gap-2 sm:gap-3 z-10 flex-shrink-0 glass-panel" style={{ background: 'var(--header-bg)', borderColor: 'var(--header-border)' }}>
         <button onClick={onBack} aria-label="Back to conversations" className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition-colors flex-shrink-0">
@@ -208,6 +212,18 @@ export default function ChatView({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <ThemeToggle />
+          {conversation?.is_group ? (
+            <button onClick={() => setGroupManageOpen(true)} aria-label="Add participant"
+              className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Add participant">
+              <UserPlus className="w-4 h-4" />
+            </button>
+          ) : (
+            <button onClick={() => setShareInviteOpen(true)} aria-label="Invite a contact"
+              className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Invite a contact">
+              <Share2 className="w-4 h-4" />
+            </button>
+          )}
+
           <button onClick={() => setLangSettingsOpen(true)} className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Language">
             <Globe className="w-4 h-4" />
           </button>
@@ -269,7 +285,7 @@ export default function ChatView({
       </AnimatePresence>
 
       {/* Messages */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-8 overscroll-contain">
+      <div ref={scrollContainerRef} className="flex-1 w-full max-w-full box-border overflow-y-auto overflow-x-hidden px-0 py-4 space-y-8 overscroll-contain">
         {/* Infinite-scroll sentinel + older-history status */}
         <div ref={topSentinelRef} className="flex items-center justify-center">
           {loadingOlder ? (
@@ -303,7 +319,19 @@ export default function ChatView({
             // DateSeparator elements pass through directly
             if (item && !item.id) return item;
             const msg = item;
+            // Group events ("X was added to the conversation")
+            if (msg.type === 'system') {
+              return (
+                <div key={msg.id} className="flex justify-center px-3">
+                  <span className="max-w-full box-border text-center text-[11px] px-3 py-1.5 rounded-full"
+                    style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+                    {msg.content}
+                  </span>
+                </div>
+              );
+            }
             // Deleted message
+
             if (msg.deleted) {
               return (
                 <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'} px-4`}>
@@ -414,6 +442,13 @@ export default function ChatView({
         conversation={conversation}
         currentUser={currentUser}
       />
+
+      <ShareInviteModal
+        isOpen={shareInviteOpen}
+        onClose={() => setShareInviteOpen(false)}
+        currentUser={currentUser}
+      />
+
     </div>
   );
 }
