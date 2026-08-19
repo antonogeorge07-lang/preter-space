@@ -96,7 +96,7 @@ export default function GroupManageModal({ isOpen, onClose, conversation, curren
             initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={e => e.stopPropagation()}
-            className="w-full max-w-full sm:max-w-sm box-border rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+            className="w-full max-w-full sm:max-w-sm box-border max-h-[88dvh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
             style={{ background: 'var(--surface-bg)', border: '1px solid var(--surface-border)' }}
           >
             {/* Header */}
@@ -116,7 +116,7 @@ export default function GroupManageModal({ isOpen, onClose, conversation, curren
             </div>
 
             {/* Member list */}
-            <div className="overflow-y-auto overflow-x-hidden" style={{ maxHeight: '35vh' }}>
+            <div className="overflow-y-auto overflow-x-hidden" style={{ maxHeight: '30dvh' }}>
               {loading && <p className="text-center py-6 text-sm" style={{ color: 'var(--muted)' }}>Loading...</p>}
               {members.map(member => (
                 <div key={member.id} className="flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-black/5 transition-colors">
@@ -146,7 +146,7 @@ export default function GroupManageModal({ isOpen, onClose, conversation, curren
             </div>
 
             {/* Add participant */}
-            <div className="px-3 sm:px-4 py-3 border-t space-y-2" style={{ borderColor: 'var(--surface-border)' }}>
+            <div className="px-3 sm:px-4 py-3 border-t space-y-2 overflow-y-auto" style={{ borderColor: 'var(--surface-border)' }}>
               <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
                 Add participant
               </p>

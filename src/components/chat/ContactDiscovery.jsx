@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, Search, MessageSquare } from 'lucide-react';
+import { X, Users, Search, UserPlus } from 'lucide-react';
 import { useConvexQuery } from '@/lib/convex';
 import { convexApi } from '@/lib/convexApi';
 
@@ -51,7 +51,7 @@ export default function ContactDiscovery({ isOpen, onClose, currentUser, onStart
             initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={e => e.stopPropagation()}
-            className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+            className="w-full max-w-full sm:max-w-sm box-border max-h-[88dvh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
             style={{ background: 'var(--surface-bg)', border: '1px solid var(--surface-border)' }}
           >
             {/* Header */}
@@ -59,7 +59,7 @@ export default function ContactDiscovery({ isOpen, onClose, currentUser, onStart
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4" style={{ color: 'var(--primary)' }} />
                 <h2 className="font-semibold text-base font-heading" style={{ color: 'var(--foreground)' }}>
-                  People on Preter
+                  Add a contact
                 </h2>
               </div>
               <button onClick={onClose} className="p-1.5 rounded-xl transition-colors" style={{ color: 'var(--muted)' }}>
@@ -83,7 +83,7 @@ export default function ContactDiscovery({ isOpen, onClose, currentUser, onStart
             </div>
 
             {/* List */}
-            <div className="overflow-y-auto" style={{ maxHeight: '55vh' }}>
+            <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ minHeight: '30vh' }}>
               {loading && (
                 <p className="text-center py-8 text-sm" style={{ color: 'var(--muted)' }}>Searching...</p>
               )}
@@ -113,12 +113,12 @@ export default function ContactDiscovery({ isOpen, onClose, currentUser, onStart
                     onClick={() => { onStartConversation(u); onClose(); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:opacity-80"
                     style={{ background: 'var(--primary)', color: 'var(--paper)' }}>
-                    <MessageSquare className="w-3 h-3" /> Chat
+                    <UserPlus className="w-3 h-3" /> Add
                   </button>
                 </div>
               ))}
             </div>
-            <div className="h-[env(safe-area-inset-bottom)]" />
+            <div className="pb-safe" />
           </motion.div>
         </motion.div>
       )}
