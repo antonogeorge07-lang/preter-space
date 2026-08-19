@@ -1,11 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, UserCircle, Pin, Archive, Users, BellOff, SearchIcon } from 'lucide-react';
+import { Search, X, UserCircle, Pin, Archive, Users, BellOff, SearchIcon, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import ConversationContextMenu from '@/components/chat/ConversationContextMenu';
 import NewConversationModal from '@/components/chat/NewConversationModal';
 import PullToRefresh from '@/components/chat/PullToRefresh';
-import InviteButton from '@/components/chat/InviteButton';
 
 function formatTime(dateStr) {
   if (!dateStr) return '';
@@ -202,12 +201,9 @@ export default function ConversationList({ conversations, activeId, onSelect, is
               className="w-full py-2 rounded-xl text-xs font-medium transition-all hover:opacity-80 mt-1.5 flex items-center justify-center gap-1.5"
               style={{ color: 'var(--muted)', border: '1px solid var(--surface-border)' }}
             >
-              <Users className="w-3.5 h-3.5" /> Find People
+              <UserPlus className="w-3.5 h-3.5" /> Add Contact
             </button>
           )}
-          <div className="mt-1.5">
-            <InviteButton currentUser={currentUser} />
-          </div>
         </div>
       </aside>
 

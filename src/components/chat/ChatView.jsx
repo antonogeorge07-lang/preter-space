@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Globe, Images, Phone, Video, Search, X, MoreVertical, Users, Loader2, Share2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Globe, Images, Phone, Video, Search, X, MoreVertical, Users, Loader2, UserPlus } from 'lucide-react';
 import TextMessage from '@/components/chat/TextMessage';
 import SwipeableMessage from '@/components/chat/SwipeableMessage';
 import VoiceNoteBubble from '@/components/chat/VoiceNoteBubble';
@@ -20,7 +20,6 @@ import ImageLightbox from '@/components/chat/ImageLightbox';
 import GroupManageModal from '@/components/chat/GroupManageModal';
 import FileAttachmentBubble from '@/components/chat/FileAttachmentBubble';
 import ContactProfileModal from '@/components/chat/ContactProfileModal';
-import ShareInviteModal from '@/components/chat/ShareInviteModal';
 
 import { toast } from '@/components/ui/use-toast';
 import { useChatMutations } from '@/hooks/useConvexChat';
@@ -33,7 +32,7 @@ export default function ChatView({
   onSendMessage, onTyping, onStartRecording, onStartVideo, onImageSend, onFileSend,
   isProcessing, onBack, onLanguageChange, onDeleteMessage, onEditMessage, onStartCall,
   replyTo, onSetReplyTo, onCancelReply, othersTyping = [], onReaction, contactPresence,
-  hasMoreMessages = false, loadingOlder = false, onLoadOlder,
+  hasMoreMessages = false, loadingOlder = false, onLoadOlder, onAddContact,
 }) {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -50,7 +49,6 @@ export default function ChatView({
   const [lightboxSrc, setLightboxSrc] = useState(null);
   const [groupManageOpen, setGroupManageOpen] = useState(false);
   const [contactProfileUserId, setContactProfileUserId] = useState(null);
-  const [shareInviteOpen, setShareInviteOpen] = useState(false);
 
   const moreMenuRef = useRef(null);
   const [moderating, setModerating] = useState(false);
@@ -218,10 +216,12 @@ export default function ChatView({
               <UserPlus className="w-4 h-4" />
             </button>
           ) : (
-            <button onClick={() => setShareInviteOpen(true)} aria-label="Invite a contact"
-              className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Invite a contact">
-              <Share2 className="w-4 h-4" />
-            </button>
+            onAddContact && (
+              <button onClick={onAddContact} aria-label="Add a contact"
+                className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Add a contact">
+                <UserPlus className="w-4 h-4" />
+              </button>
+            )
           )}
 
           <button onClick={() => setLangSettingsOpen(true)} className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Language">
@@ -440,12 +440,6 @@ export default function ChatView({
         isOpen={groupManageOpen}
         onClose={() => setGroupManageOpen(false)}
         conversation={conversation}
-        currentUser={currentUser}
-      />
-
-      <ShareInviteModal
-        isOpen={shareInviteOpen}
-        onClose={() => setShareInviteOpen(false)}
         currentUser={currentUser}
       />
 
