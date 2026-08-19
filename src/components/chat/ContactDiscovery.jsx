@@ -51,7 +51,7 @@ export default function ContactDiscovery({ isOpen, onClose, currentUser, onStart
             initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={e => e.stopPropagation()}
-            className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+            className="w-full max-w-full sm:max-w-sm box-border max-h-[88dvh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
             style={{ background: 'var(--surface-bg)', border: '1px solid var(--surface-border)' }}
           >
             {/* Header */}
