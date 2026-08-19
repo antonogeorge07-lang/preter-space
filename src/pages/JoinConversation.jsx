@@ -167,7 +167,7 @@ export default function JoinConversation() {
   // Transition states
   if (step === 'joining' || step === 'joined' || step === 'already' || step === 'error') {
     return (
-      <div className="h-[100dvh] w-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
+      <div className="h-[100dvh] w-full flex items-center justify-center" style={{ background: 'var(--background)' }}>
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
           className="flex flex-col items-center gap-4 p-10 rounded-3xl text-center max-w-xs mx-4"
           style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
@@ -197,7 +197,7 @@ export default function JoinConversation() {
   }
 
   return (
-    <div className="h-[100dvh] w-screen flex flex-col items-center justify-center overflow-hidden relative px-4"
+    <div className="h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden relative px-4"
       style={{ background: 'var(--background)' }}>
       <div className="absolute inset-0 dot-grid opacity-50 pointer-events-none" />
 
