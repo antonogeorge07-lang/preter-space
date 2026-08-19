@@ -285,7 +285,7 @@ export default function ChatView({
       </AnimatePresence>
 
       {/* Messages */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-8 overscroll-contain">
+      <div ref={scrollContainerRef} className="flex-1 w-full max-w-full box-border overflow-y-auto overflow-x-hidden px-0 py-4 space-y-8 overscroll-contain">
         {/* Infinite-scroll sentinel + older-history status */}
         <div ref={topSentinelRef} className="flex items-center justify-center">
           {loadingOlder ? (
@@ -319,7 +319,19 @@ export default function ChatView({
             // DateSeparator elements pass through directly
             if (item && !item.id) return item;
             const msg = item;
+            // Group events ("X was added to the conversation")
+            if (msg.type === 'system') {
+              return (
+                <div key={msg.id} className="flex justify-center px-3">
+                  <span className="max-w-full box-border text-center text-[11px] px-3 py-1.5 rounded-full"
+                    style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--muted)' }}>
+                    {msg.content}
+                  </span>
+                </div>
+              );
+            }
             // Deleted message
+
             if (msg.deleted) {
               return (
                 <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'} px-4`}>
@@ -430,6 +442,13 @@ export default function ChatView({
         conversation={conversation}
         currentUser={currentUser}
       />
+
+      <ShareInviteModal
+        isOpen={shareInviteOpen}
+        onClose={() => setShareInviteOpen(false)}
+        currentUser={currentUser}
+      />
+
     </div>
   );
 }
