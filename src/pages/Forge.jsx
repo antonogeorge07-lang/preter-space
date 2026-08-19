@@ -579,6 +579,7 @@ export default function Forge() {
             hasMoreMessages={hasMoreMessages}
             loadingOlder={loadingOlder}
             onLoadOlder={loadOlder}
+            onAddContact={() => setContactDiscoveryOpen(true)}
           />
         ) : (
           <MorningSummary
