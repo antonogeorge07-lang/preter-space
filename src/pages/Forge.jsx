@@ -518,7 +518,7 @@ export default function Forge() {
   );
 
   return (
-    <div className="w-screen flex relative overflow-hidden" style={{ background: 'var(--background)', height: '100svh', minHeight: '-webkit-fill-available' }}>
+    <div className="w-full max-w-full min-h-[100dvh] h-[100dvh] overflow-x-hidden flex relative overflow-hidden box-border" style={{ background: 'var(--background)', minHeight: '-webkit-fill-available' }}>
       {/* Subtle dot grid texture */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden dot-grid opacity-60" />
       {/* Themed ambient orbs */}

@@ -40,8 +40,10 @@ export const convexChat = {
       conversationId,
       ...toConvexConversationPatch(patch),
     }),
+  addParticipant: (args) => client().mutation(convexApi.conversations.addParticipant, args),
   deleteConversation: (conversationId) =>
     client().mutation(convexApi.conversations.remove, { conversationId }),
+
 
   // ── messages ────────────────────────────────────────────────────────────
   sendMessage: (args) => client().mutation(convexApi.messages.send, args),

@@ -221,6 +221,11 @@
   font-family: var(--font-body-family);
 }
 
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+
 @layer base {
   * {
     border-color: var(--color-border);
