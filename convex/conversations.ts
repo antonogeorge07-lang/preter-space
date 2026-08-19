@@ -137,7 +137,58 @@ export const remove = mutation({
   },
 });
 
+/**
+ * Append a participant to a conversation and announce it with a system message.
+ * Idempotent: adding somebody who is already a member is a no-op.
+ */
+export const addParticipant = mutation({
+  args: {
+    conversationId: v.id("conversations"),
+    userId: v.string(),
+    userName: v.optional(v.string()),
+    language: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+
+    if (conversation.participantIds.includes(args.userId)) {
+      return { added: false };
+    }
+
+    const displayName = (args.userName || args.userId).trim() || args.userId;
+    const participantIds = [...conversation.participantIds, args.userId];
+    const participantNames = [...(conversation.participantNames ?? []), displayName];
+    const participantLanguages = {
+      ...((conversation.participantLanguages as Record<string, string> | undefined) ?? {}),
+    };
+    if (args.language) participantLanguages[args.userId] = args.language;
+
+    const notice = `${displayName} was added to the conversation`;
+
+    await ctx.db.patch(args.conversationId, {
+      participantIds,
+      participantNames,
+      participantLanguages,
+      lastMessagePreview: notice,
+      lastMessageTime: Date.now(),
+    });
+    await syncMembers(ctx, args.conversationId, participantIds);
+
+    await ctx.db.insert("messages", {
+      conversationId: args.conversationId,
+      senderId: "system",
+      text: notice,
+      meta: { type: "system" },
+      createdAt: Date.now(),
+    });
+
+    return { added: true };
+  },
+});
+
 export const reportConversation = mutation({
+
   args: {
     reporterId: v.string(),
     targetId: v.string(),

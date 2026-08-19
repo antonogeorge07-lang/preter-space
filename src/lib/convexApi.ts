@@ -34,6 +34,11 @@ export const convexApi = {
     update: fn.mutation<{ conversationId: string } & ConvexConversationPatch, string>(
       "conversations:update",
     ),
+    addParticipant: fn.mutation<
+      { conversationId: string; userId: string; userName?: string; language?: string },
+      { added: boolean }
+    >("conversations:addParticipant"),
+
     remove: fn.mutation<{ conversationId: string }, null>("conversations:remove"),
     reportConversation: fn.mutation<
       { reporterId: string; targetId: string; conversationId?: string; reason: string },
