@@ -249,6 +249,16 @@
   body {
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  img,
+  video,
+  canvas,
+  svg:not([class*="w-"]) {
+    max-width: 100%;
   }
 
   button,

@@ -348,10 +348,10 @@ export default function ChatView({
             if (msg.type === 'video') return <VideoMessageBubble key={msg.id} message={msg} preferredLang={preferredLang} />;
             if (msg.type === 'file') return <FileAttachmentBubble key={msg.id} message={msg} />;
             if (msg.type === 'image') return (
-              <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'} px-3`}>
-                <div className="flex flex-col gap-1">
+              <div key={msg.id} className={`flex w-full max-w-full box-border ${msg.sender === 'me' ? 'justify-end' : 'justify-start'} px-3`}>
+                <div className="flex flex-col gap-1 min-w-0 max-w-[78%]">
                   {msg.reply_to_id && <ReplyPreview content={msg.reply_to_content} sender={msg.reply_to_sender} isMe={msg.sender === 'me'} />}
-                  <img src={msg.image_url} alt="shared" className="max-w-[60%] rounded-2xl shadow-xl object-cover cursor-pointer hover:opacity-90 transition-opacity" style={{ border: '2px solid var(--card-border)' }}
+                  <img src={msg.image_url} alt="shared" className="w-full max-w-full h-auto rounded-2xl shadow-xl object-cover cursor-pointer hover:opacity-90 transition-opacity" style={{ border: '2px solid var(--card-border)' }}
                     onClick={() => setLightboxSrc(msg.image_url)} />
                 </div>
               </div>

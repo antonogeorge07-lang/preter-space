@@ -25,7 +25,7 @@ export default function FileAttachmentBubble({ message }) {
         download={message.file_name}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-3 px-4 py-3 rounded-2xl max-w-[260px] transition-opacity hover:opacity-80 active:opacity-70"
+        className="flex items-center gap-3 px-4 py-3 rounded-2xl max-w-[min(260px,78%)] min-w-0 transition-opacity hover:opacity-80 active:opacity-70"
         style={{
           background: isMe ? 'var(--bubble-outgoing)' : 'var(--bubble-incoming)',
           border: '1px solid var(--card-border)',

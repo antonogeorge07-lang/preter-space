@@ -460,7 +460,7 @@ export default function Landing() {
   const showHero = mode === 'signin' || (mode === 'register' && step === 'entry');
 
   return (
-    <div className="min-h-[100dvh] w-screen flex flex-col overflow-x-hidden" style={{ background: 'var(--background)' }}>
+    <div className="min-h-[100dvh] w-full flex flex-col overflow-x-hidden" style={{ background: 'var(--background)' }}>
       <div className="absolute inset-0 dot-grid opacity-40 pointer-events-none" />
 
       {/* ── Hero + Auth (split layout) ─────────────────────────────────────── */}
