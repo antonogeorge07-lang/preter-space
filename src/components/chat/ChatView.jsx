@@ -158,7 +158,7 @@ export default function ChatView({
   };
 
   return (
-    <div className="flex flex-col h-full w-full min-w-0 overflow-hidden">
+    <div className="flex flex-col h-full w-full max-w-full min-w-0 box-border overflow-hidden overflow-x-hidden">
       {/* Header */}
       <div className="min-h-14 sm:min-h-16 border-b px-3 sm:px-4 flex items-center gap-2 sm:gap-3 z-10 flex-shrink-0 glass-panel" style={{ background: 'var(--header-bg)', borderColor: 'var(--header-border)' }}>
         <button onClick={onBack} aria-label="Back to conversations" className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition-colors flex-shrink-0">
@@ -212,6 +212,18 @@ export default function ChatView({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <ThemeToggle />
+          {conversation?.is_group ? (
+            <button onClick={() => setGroupManageOpen(true)} aria-label="Add participant"
+              className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Add participant">
+              <UserPlus className="w-4 h-4" />
+            </button>
+          ) : (
+            <button onClick={() => setShareInviteOpen(true)} aria-label="Invite a contact"
+              className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Invite a contact">
+              <Share2 className="w-4 h-4" />
+            </button>
+          )}
+
           <button onClick={() => setLangSettingsOpen(true)} className="p-2 rounded-xl hover:bg-black/5 transition-colors text-foreground/50" title="Language">
             <Globe className="w-4 h-4" />
           </button>
