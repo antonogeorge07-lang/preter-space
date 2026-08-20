@@ -78,7 +78,7 @@ export default function MessageInput({ onSend, onTyping, onStartRecording, onSta
   const busy = isProcessing || uploadingImage || uploadingFile;
 
   return (
-    <div className="w-full max-w-full box-border px-3 sm:px-4 pt-2 pb-3 flex-shrink-0 overflow-x-hidden" style={{ borderTop: '1px solid var(--surface-border)', background: 'var(--surface-bg)', paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+    <div className="composer-bar w-full max-w-full box-border px-3 sm:px-4 pt-2 flex-shrink-0 overflow-x-hidden" style={{ borderTop: '1px solid var(--surface-border)', background: 'var(--surface-bg)' }}>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       <input ref={genericFileInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.csv" className="hidden" onChange={handleGenericFileChange} />
 
