@@ -604,11 +604,15 @@ export default function Forge() {
         )}
       </div>
 
-      <BottomTabBar
-        activeTab={profileOpen ? 'settings' : 'chats'}
-        onChatsClick={() => { setProfileOpen(false); navigate('/'); }}
-        onSettingsClick={() => setProfileOpen(true)}
-      />
+      {!keyboardOpen && (
+        <BottomTabBar
+          activeTab={profileOpen ? 'settings' : 'chats'}
+          onChatsClick={() => { setProfileOpen(false); navigate('/'); }}
+          onSettingsClick={() => setProfileOpen(true)}
+        />
+      )}
+
+      <MobileDebugOverlay />
 
       <IncomingCallBanner
         currentUser={currentUser}
