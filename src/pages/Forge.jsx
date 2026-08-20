@@ -41,6 +41,8 @@ export default function Forge() {
   const { chatId } = useParams();
   const navigate = useNavigate();
   const authUser = useCurrentUser();
+  const kbInset = useKeyboardViewport();
+  const keyboardOpen = kbInset > 0;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
   const [videoRecorderOpen, setVideoRecorderOpen] = useState(false);
