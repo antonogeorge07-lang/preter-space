@@ -225,6 +225,19 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Keyboard-aware composer: drop the home-bar inset while the keyboard covers it. */
+.composer-bar {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+html.keyboard-open .composer-bar {
+  padding-bottom: 10px;
+}
+html.keyboard-open,
+html.keyboard-open body {
+  /* Prevent iOS from scrolling the layout viewport behind the keyboard. */
+  overflow: hidden;
+}
+
 
 @layer base {
   * {

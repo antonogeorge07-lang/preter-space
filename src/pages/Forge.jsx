@@ -31,6 +31,8 @@ import GlobalSearch from '@/components/chat/GlobalSearch';
 import ContactDiscovery from '@/components/chat/ContactDiscovery';
 import { registerPushNotifications, notifyIfHidden } from '@/lib/pushNotifications';
 import OnboardingModal from '@/components/chat/OnboardingModal';
+import MobileDebugOverlay from '@/components/chat/MobileDebugOverlay';
+import useKeyboardViewport from '@/hooks/useKeyboardViewport';
 import { enqueue, flushQueue } from '@/lib/offlineQueue';
 import { registerActiveDeviceSession, isCurrentSessionAlive } from '@/lib/deviceSession';
 import { toast } from '@/components/ui/use-toast';
@@ -39,6 +41,8 @@ export default function Forge() {
   const { chatId } = useParams();
   const navigate = useNavigate();
   const authUser = useCurrentUser();
+  const kbInset = useKeyboardViewport();
+  const keyboardOpen = kbInset > 0;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [voiceRecorderOpen, setVoiceRecorderOpen] = useState(false);
   const [videoRecorderOpen, setVideoRecorderOpen] = useState(false);
@@ -518,7 +522,14 @@ export default function Forge() {
   );
 
   return (
-    <div className="w-full max-w-full min-h-[100dvh] h-[100dvh] overflow-x-hidden flex relative overflow-hidden box-border" style={{ background: 'var(--background)', minHeight: '-webkit-fill-available' }}>
+    <div
+      className="w-full max-w-full overflow-x-hidden flex relative overflow-hidden box-border"
+      style={{
+        background: 'var(--background)',
+        height: 'var(--app-height, 100dvh)',
+        maxHeight: 'var(--app-height, 100dvh)',
+      }}
+    >
       {/* Subtle dot grid texture */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden dot-grid opacity-60" />
       {/* Themed ambient orbs */}
@@ -551,7 +562,9 @@ export default function Forge() {
       </div>
 
       {/* Main area */}
-      <div className="flex flex-1 min-w-0 flex-col relative z-10 overflow-hidden pb-[calc(60px+env(safe-area-inset-bottom))] lg:pb-0">
+      <div
+        className={`flex flex-1 min-w-0 flex-col relative z-10 overflow-hidden lg:pb-0 ${keyboardOpen ? '' : 'pb-[calc(60px+env(safe-area-inset-bottom))]'}`}
+      >
         {activeConversation ? (
           <ChatView
             conversation={activeConversation}
@@ -591,11 +604,15 @@ export default function Forge() {
         )}
       </div>
 
-      <BottomTabBar
-        activeTab={profileOpen ? 'settings' : 'chats'}
-        onChatsClick={() => { setProfileOpen(false); navigate('/'); }}
-        onSettingsClick={() => setProfileOpen(true)}
-      />
+      {!keyboardOpen && (
+        <BottomTabBar
+          activeTab={profileOpen ? 'settings' : 'chats'}
+          onChatsClick={() => { setProfileOpen(false); navigate('/'); }}
+          onSettingsClick={() => setProfileOpen(true)}
+        />
+      )}
+
+      <MobileDebugOverlay />
 
       <IncomingCallBanner
         currentUser={currentUser}
