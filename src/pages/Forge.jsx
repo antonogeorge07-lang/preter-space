@@ -31,6 +31,8 @@ import GlobalSearch from '@/components/chat/GlobalSearch';
 import ContactDiscovery from '@/components/chat/ContactDiscovery';
 import { registerPushNotifications, notifyIfHidden } from '@/lib/pushNotifications';
 import OnboardingModal from '@/components/chat/OnboardingModal';
+import MobileDebugOverlay from '@/components/chat/MobileDebugOverlay';
+import useKeyboardViewport from '@/hooks/useKeyboardViewport';
 import { enqueue, flushQueue } from '@/lib/offlineQueue';
 import { registerActiveDeviceSession, isCurrentSessionAlive } from '@/lib/deviceSession';
 import { toast } from '@/components/ui/use-toast';
