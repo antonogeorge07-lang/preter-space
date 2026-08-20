@@ -562,7 +562,9 @@ export default function Forge() {
       </div>
 
       {/* Main area */}
-      <div className="flex flex-1 min-w-0 flex-col relative z-10 overflow-hidden pb-[calc(60px+env(safe-area-inset-bottom))] lg:pb-0">
+      <div
+        className={`flex flex-1 min-w-0 flex-col relative z-10 overflow-hidden lg:pb-0 ${keyboardOpen ? '' : 'pb-[calc(60px+env(safe-area-inset-bottom))]'}`}
+      >
         {activeConversation ? (
           <ChatView
             conversation={activeConversation}
