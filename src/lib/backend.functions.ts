@@ -3,7 +3,10 @@ import { createServerFn } from "@tanstack/react-start";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 function extractJson(text: string) {
-  const cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+  const cleaned = text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
   try {
     return JSON.parse(cleaned);
   } catch {
@@ -20,7 +23,7 @@ function extractJson(text: string) {
 }
 
 export const invokeLLM = createServerFn({ method: "POST" })
-  .inputValidator((data: { prompt: string }) => data)
+  .validator((data: { prompt: string }) => data)
   .handler(async ({ data }) => {
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new Error("AI is not configured");
@@ -31,7 +34,10 @@ export const invokeLLM = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: "google/gemini-3.5-flash",
         messages: [
-          { role: "system", content: "You are a precise assistant. Always reply with valid JSON only." },
+          {
+            role: "system",
+            content: "You are a precise assistant. Always reply with valid JSON only.",
+          },
           { role: "user", content: data.prompt },
         ],
       }),
@@ -49,7 +55,7 @@ export const invokeLLM = createServerFn({ method: "POST" })
   });
 
 export const transcribeAudio = createServerFn({ method: "POST" })
-  .inputValidator((data: { audioUrl: string }) => data)
+  .validator((data: { audioUrl: string }) => data)
   .handler(async ({ data }) => {
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new Error("AI is not configured");
@@ -68,7 +74,10 @@ export const transcribeAudio = createServerFn({ method: "POST" })
           {
             role: "user",
             content: [
-              { type: "text", text: "Transcribe this audio verbatim. Reply with the transcript text only." },
+              {
+                type: "text",
+                text: "Transcribe this audio verbatim. Reply with the transcript text only.",
+              },
               { type: "input_audio", input_audio: { data: base64, format: "webm" } },
             ],
           },
@@ -87,7 +96,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
   });
 
 export const sendInviteEmail = createServerFn({ method: "POST" })
-  .inputValidator((data: { to: string; subject: string; body: string }) => data)
+  .validator((data: { to: string; subject: string; body: string }) => data)
   .handler(async ({ data }) => {
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new Error("Email is not configured");
