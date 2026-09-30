@@ -233,13 +233,30 @@ const auth = {
     return true;
   },
   async loginWithProvider(provider, redirectPath = "/") {
-    const { lovable } = await import("@/integrations/lovable/index");
-    const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+    const supportedProviders = new Set(["google", "apple", "azure"]);
+
+    const normalizedProvider =
+      provider === "microsoft" ? "azure" : provider;
+
+    if (!supportedProviders.has(normalizedProvider)) {
+      throw new Error(`Unsupported OAuth provider: ${provider}`);
+    }
+
+    const redirectTo = new URL(
+      redirectPath,
+      window.location.origin,
+    ).toString();
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: normalizedProvider,
+      options: {
+        redirectTo,
+      },
     });
-    if (result.error) throw new Error(result.error.message || "Sign-in failed");
-    if (result.redirected) return;
-    window.location.href = redirectPath;
+
+    if (error) {
+      throw new Error(error.message || "Sign-in failed");
+    }
   },
   async logout(redirect = "/landing") {
     try {
