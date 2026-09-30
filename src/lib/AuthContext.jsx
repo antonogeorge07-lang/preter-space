@@ -34,16 +34,20 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // Best effort only: a directory sync failure must never affect the session.
   const mirrorToDirectory = useCallback((u) => {
     if (!u?.email) return;
-    convexChat
-      .upsertUser({
+    try {
+      const result = convexChat.upsertUser({
         name: u.full_name || u.email,
         email: u.email,
         ...(u.language_set && u.default_language ? { language: u.default_language } : {}),
         ...(u.avatar_url ? { avatarUrl: u.avatar_url } : {}),
-      })
-      .catch(() => {});
+      });
+      if (result && typeof result.catch === "function") result.catch(() => {});
+    } catch {
+      /* directory unavailable - keep the user signed in */
+    }
   }, []);
 
   /**
