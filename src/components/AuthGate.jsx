@@ -53,7 +53,7 @@ export default function AuthGate({ children }) {
 
   useEffect(() => {
     if (!isLoadingAuth && !isAuthenticated && !authError) {
-      navigate("/landing", { replace: true });
+      console.log("[dbg] gate redirect"); navigate("/landing", { replace: true });
     }
   }, [isLoadingAuth, isAuthenticated, authError, navigate]);
 

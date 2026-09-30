@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }) => {
         await new Promise((r) => setTimeout(r, 250));
       }
 
+      console.log('[dbg] session?', !!session);
       if (!session) {
         if (!mounted.current) return;
         setUser(null);
@@ -76,10 +77,12 @@ export const AuthProvider = ({ children }) => {
       const u = await db.auth.me();
       if (!mounted.current) return;
       setUser(u);
+      console.log('[dbg] authed', u?.email);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       mirrorToDirectory(u);
     } catch (err) {
+      console.log('[dbg] auth error', err?.message, 'mounted', mounted.current);
       if (!mounted.current) return;
       if (isNetworkError(err)) {
         setAuthError({
