@@ -42,8 +42,6 @@ export default defineConfig(({ mode, command }) => {
         ? [
             nitro({
               preset: "cloudflare-module",
-              // Hosting deploys from dist/, so the build must write there.
-              output: { dir: "dist" },
             }),
           ]
         : []),
