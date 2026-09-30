@@ -1,9 +1,23 @@
 import { db } from '@/lib/db';
 import { convexChat } from '@/lib/convexChat';
+import { supabase } from '@/integrations/supabase/client';
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 
 const AuthContext = createContext();
+
+function isNetworkError(err) {
+  const msg = (err?.message || '').toLowerCase();
+  return (
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network request failed') ||
+    msg.includes('load failed') ||
+    msg.includes('fetch failed') ||
+    msg.includes('timed out') ||
+    msg.includes('timeout')
+  );
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -11,33 +25,95 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const mounted = useRef(true);
 
   useEffect(() => {
-    db.auth.me()
-      .then((u) => {
-        setUser(u);
-        setIsAuthenticated(true);
-        setIsLoadingAuth(false);
-        // Mirror the account into the Convex directory so this person is
-        // discoverable in search even before they open a conversation.
-        if (u?.email) {
-          convexChat
-            .upsertUser({
-              name: u.full_name || u.email,
-              email: u.email,
-              // Never overwrite a chosen language with the "en" fallback.
-              ...(u.language_set && u.default_language ? { language: u.default_language } : {}),
-              ...(u.avatar_url ? { avatarUrl: u.avatar_url } : {}),
-            })
-            .catch(() => {});
-        }
-      })
-      .catch(() => {
-        setIsAuthenticated(false);
-        setIsLoadingAuth(false);
-      });
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
+  const mirrorToDirectory = useCallback((u) => {
+    if (!u?.email) return;
+    convexChat
+      .upsertUser({
+        name: u.full_name || u.email,
+        email: u.email,
+        ...(u.language_set && u.default_language ? { language: u.default_language } : {}),
+        ...(u.avatar_url ? { avatarUrl: u.avatar_url } : {}),
+      })
+      .catch(() => {});
+  }, []);
+
+  /**
+   * Resolve the signed-in account. The session may not be readable on the very
+   * first attempt (the preview auth broker and the OAuth redirect both restore
+   * it asynchronously), so wait for a session before declaring the visitor a
+   * guest. Without this a freshly authenticated user is bounced back to the
+   * landing page.
+   */
+  const resolve = useCallback(async () => {
+    setAuthError(null);
+    try {
+      let session = null;
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        session = data?.session || null;
+        if (session) break;
+        await new Promise((r) => setTimeout(r, 250));
+      }
+
+      if (!session) {
+        if (!mounted.current) return;
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+        return;
+      }
+
+      const u = await db.auth.me();
+      if (!mounted.current) return;
+      setUser(u);
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+      mirrorToDirectory(u);
+    } catch (err) {
+      if (!mounted.current) return;
+      if (isNetworkError(err)) {
+        setAuthError({
+          type: 'network',
+          message: "We couldn't reach Preter. Check your connection and try again.",
+        });
+      }
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoadingAuth(false);
+    }
+  }, [mirrorToDirectory]);
+
+  useEffect(() => {
+    resolve();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        setIsLoadingAuth(true);
+        resolve();
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+      }
+    });
+
+    return () => sub?.subscription?.unsubscribe?.();
+  }, [resolve]);
+
+  const retryAuth = useCallback(() => {
+    setIsLoadingAuth(true);
+    resolve();
+  }, [resolve]);
 
   const logout = () => db.auth.logout('/landing');
 
@@ -48,6 +124,7 @@ export const AuthProvider = ({ children }) => {
       isLoadingAuth,
       isLoadingPublicSettings,
       authError,
+      retryAuth,
       logout,
     }}>
       {children}
