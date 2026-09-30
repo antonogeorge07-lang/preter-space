@@ -1,5 +1,6 @@
 import { saveUserLanguage } from '@/lib/saveUserLanguage';
 import { db } from '@/lib/db';
+import { authErrorMessage } from '@/lib/authErrors';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -362,32 +363,37 @@ export default function Landing() {
   const [lang, setLang] = useState(() => detectLang());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [canRetry, setCanRetry] = useState(false);
   const [sharedInvite, setSharedInvite] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
 
   const switchMode = (m) => { setMode(m); setStep('entry'); setError(''); setOtp(''); setPassword(''); };
 
   const handleGoogleSignIn = async () => {
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setCanRetry(false);
     try {
       await db.auth.loginWithProvider('google', '/');
-    } catch {
-      setError('Google sign-in could not start. Please try again or use your email and password.');
+    } catch (err) {
+      const { message, retryable } = authErrorMessage(err);
+      setError(message === 'Sign in failed. Please try again.'
+        ? 'Google sign-in could not start. Please try again or use your email and password.'
+        : message);
+      setCanRetry(retryable);
       setLoading(false);
     }
   };
 
   const handleSignIn = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!contact.trim() || !password) return;
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setCanRetry(false);
     try {
       await db.auth.loginViaEmailPassword(contact.trim(), password);
       window.location.replace('/');
     } catch (err) {
-      const msg = (err?.message || '').toLowerCase();
-      setError(msg.includes('password') || msg.includes('invalid') || msg.includes('credential')
-        ? 'Incorrect email or password.' : 'Sign in failed. Please try again.');
+      const { message, retryable } = authErrorMessage(err);
+      setError(message);
+      setCanRetry(retryable);
       setLoading(false);
     }
   };
@@ -547,7 +553,18 @@ export default function Landing() {
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
-                      {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+                      {error && (
+                        <div className="flex flex-col items-center gap-2">
+                          <p className="text-xs text-red-500 text-center">{error}</p>
+                          {canRetry && (
+                            <button type="button" onClick={handleSignIn}
+                              className="text-xs font-semibold underline underline-offset-2"
+                              style={{ color: 'var(--primary)' }}>
+                              Try again
+                            </button>
+                          )}
+                        </div>
+                      )}
                       <motion.button type="submit" disabled={loading || !contact.trim() || !password} whileTap={{ scale: 0.97 }}
                         className="w-full py-3.5 rounded-2xl text-sm font-semibold mt-1 transition-all disabled:opacity-50"
                         style={{ background: 'var(--primary)', color: 'var(--paper)' }}>

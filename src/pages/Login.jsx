@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { authErrorMessage } from '@/lib/authErrors';
 
 import React, { useState } from "react";
 import { Link } from "@/lib/router-compat";
@@ -14,24 +15,36 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [canRetry, setCanRetry] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     setError("");
+    setCanRetry(false);
     setLoading(true);
     try {
       await db.auth.loginViaEmailPassword(email, password);
-      window.location.href = "/";
+      window.location.replace("/");
+      return;
     } catch (err) {
-      setError(err.message || "Invalid email or password");
-    } finally {
-      setLoading(false);
+      const { message, retryable } = authErrorMessage(err);
+      setError(message);
+      setCanRetry(retryable);
     }
+    setLoading(false);
   };
 
-  const handleGoogle = () => {
-    db.auth.loginWithProvider("google", "/");
+  const handleGoogle = async () => {
+    setError("");
+    setCanRetry(false);
+    try {
+      await db.auth.loginWithProvider("google", "/");
+    } catch (err) {
+      const { message, retryable } = authErrorMessage(err);
+      setError(message);
+      setCanRetry(retryable);
+    }
   };
 
   return (
@@ -68,7 +81,16 @@ export default function Login() {
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
+          <p>{error}</p>
+          {canRetry && (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="mt-2 text-sm font-semibold underline underline-offset-2"
+            >
+              Try again
+            </button>
+          )}
         </div>
       )}
 
