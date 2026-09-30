@@ -27,7 +27,7 @@ export default defineConfig(({ mode, command }) => {
 
       tanstackStart({
         importProtection: {
-          serverOnly: {
+          client: {
             files: ["**/server/**"],
             specifiers: ["server-only"],
           },

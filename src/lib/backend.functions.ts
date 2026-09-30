@@ -18,7 +18,7 @@ export const invokeLLM = createServerFn({ method: "POST" })
       ],
     });
 
-    return parseAIJson(content);
+    return parseAIJson(content) as Record<string, any>;
   });
 
 export const transcribeAudio = createServerFn({ method: "POST" })
