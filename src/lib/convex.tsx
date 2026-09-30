@@ -8,7 +8,9 @@ import {
 } from "convex/react";
 import { makeFunctionReference } from "convex/server";
 
-export const CONVEX_URL = import.meta.env["VITE_CONVEX_URL"] as string | undefined;
+// Public deployment URL; fallback keeps chat working if the env file is regenerated.
+export const CONVEX_URL = (import.meta.env["VITE_CONVEX_URL"] as string | undefined) ||
+  "https://good-impala-784.eu-west-1.convex.cloud";
 
 let client: ConvexReactClient | null = null;
 
