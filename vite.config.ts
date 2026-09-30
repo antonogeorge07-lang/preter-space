@@ -12,6 +12,18 @@ import { loadEnv } from "vite";
 const serverEnv = loadEnv(process.env["NODE_ENV"] === "production" ? "production" : "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
+// Public (publishable) backend settings: fallback so a build never ships without them.
+const publicDefaults: Record<string, string> = {
+  VITE_SUPABASE_URL: "https://sfrrsrdzpzobrirvdtld.supabase.co",
+  VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_5CFnT6cDUtVCjW6ATu4rdA_DuFwNmfd",
+  VITE_SUPABASE_PROJECT_ID: "sfrrsrdzpzobrirvdtld",
+  SUPABASE_URL: "https://sfrrsrdzpzobrirvdtld.supabase.co",
+  SUPABASE_PUBLISHABLE_KEY: "sb_publishable_5CFnT6cDUtVCjW6ATu4rdA_DuFwNmfd",
+};
+for (const [k, v] of Object.entries(publicDefaults)) {
+  if (!process.env[k]) process.env[k] = v;
+}
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
