@@ -2,6 +2,7 @@ import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { hashText } from "./translations";
+import { isAIConfigured, requestAIJson } from "./lib/ai";
 
 export const list = query({
   args: { conversationId: v.id("conversations") },
@@ -144,49 +145,48 @@ export const insertMessage = mutation({
   },
 });
 
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
 /**
  * Translate one text into several languages in a single AI round trip.
- * Batching keeps gateway usage at one call per message instead of one per
+ * Batching keeps provider usage at one call per message instead of one per
  * recipient language.
  */
-async function translateBatch(text: string, langs: string[], apiKey: string) {
-  const response = await fetch(GATEWAY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
-    body: JSON.stringify({
-      model: "google/gemini-3.6-flash",
-      messages: [
-        {
-          role: "system",
-          content:
-            `Detect the ISO 639-1 language of the user text, then translate it into each of these language codes: ${langs.join(", ")}. ` +
-            `If the text is already in a requested language, return it unchanged for that language. ` +
-            `Respond with JSON only: {"detected":"<iso639-1>","translations":{"<code>":"<translated text>"}}`,
-        },
-        { role: "user", content: text },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
+async function translateBatch(text: string, langs: string[]) {
+  const raw = await requestAIJson([
+    {
+      role: "system",
+      content:
+        `Detect the ISO 639-1 language of the user text, then translate it into each of these language codes: ${langs.join(", ")}. ` +
+        `If the text is already in a requested language, return it unchanged for that language. ` +
+        `Respond with JSON only: {"detected":"<iso639-1>","translations":{"<code>":"<translated text>"}}`,
+    },
+    { role: "user", content: text },
+  ]);
 
-  if (!response.ok) throw new Error(`Translation failed (${response.status})`);
-  const data = await response.json();
-  const raw = data?.choices?.[0]?.message?.content ?? "{}";
-  let parsed: { detected?: string; translations?: Record<string, string> } = {};
+  let parsed: {
+    detected?: string;
+    translations?: Record<string, string>;
+  } = {};
+
   try {
-    parsed = JSON.parse(raw.replace(/^```(?:json)?|```$/g, "").trim());
+    parsed = JSON.parse(
+      raw.replace(/^```(?:json)?|```$/g, "").trim(),
+    );
   } catch {
     parsed = {};
   }
 
   const translations: Record<string, string> = {};
+
   for (const lang of langs) {
     const value = parsed.translations?.[lang];
-    translations[lang] = parsed.detected === lang ? text : value || text;
+    translations[lang] =
+      parsed.detected === lang ? text : value || text;
   }
-  return { detected: parsed.detected || "", translations };
+
+  return {
+    detected: parsed.detected || "",
+    translations,
+  };
 }
 
 /**
@@ -203,7 +203,7 @@ export const sendWithTranslation = action({
     meta: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
+    const aiConfigured = isAIConfigured();
     const translations: Record<string, string> = {};
     let detectedLanguage = "";
 
@@ -217,9 +217,9 @@ export const sendWithTranslation = action({
       }
 
       const missing = langs.filter((lang) => !translations[lang]);
-      if (apiKey && missing.length > 0) {
+      if (aiConfigured && missing.length > 0) {
         try {
-          const result = await translateBatch(args.text, missing, apiKey);
+          const result = await translateBatch(args.text, missing);
           detectedLanguage = result.detected;
           Object.assign(translations, result.translations);
           await ctx.runMutation(api.translations.putCached, {
