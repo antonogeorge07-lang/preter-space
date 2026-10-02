@@ -247,15 +247,15 @@ const auth = {
       window.location.origin,
     ).toString();
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: normalizedProvider,
-      options: {
-        redirectTo,
-      },
-    });
+    const { lovable } = await import("@/integrations/lovable/index");
+    const result = await lovable.auth.signInWithOAuth(
+      normalizedProvider === "azure" ? "microsoft" : normalizedProvider,
+      { redirect_uri: window.location.origin },
+    );
+    void redirectTo;
 
-    if (error) {
-      throw new Error(error.message || "Sign-in failed");
+    if (result?.error) {
+      throw new Error(result.error.message || "Sign-in failed");
     }
   },
   async logout(redirect = "/landing") {
