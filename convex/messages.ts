@@ -3,10 +3,13 @@ import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { hashText } from "./translations";
 import { isAIConfigured, requestAIJson } from "./lib/ai";
+import { requireConversationMember } from "./lib/authorization";
 
 export const list = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
+    await requireConversationMember(ctx, args.conversationId);
+
     return await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
@@ -25,6 +28,8 @@ export const listPage = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireConversationMember(ctx, args.conversationId);
+
     const limit = Math.min(Math.max(args.limit ?? 40, 1), 500);
     const newestFirst = await ctx.db
       .query("messages")
@@ -50,8 +55,11 @@ export const send = mutation({
     meta: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation) throw new Error("Conversation not found");
+    const { identity, conversation } = await requireConversationMember(ctx, args.conversationId);
+
+    if (args.senderId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden: sender identity mismatch");
+    }
 
     // Guard: Verify sender is not blocked by any conversation participant
     for (const participantId of conversation.participantIds) {
