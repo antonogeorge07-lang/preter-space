@@ -7,7 +7,8 @@ export const Route = createFileRoute("/join/$code")({
       { title: "Join a conversation | Preter" },
       {
         name: "description",
-        content: "You've been invited to a multilingual conversation on Preter. Pick your language and join.",
+        content:
+          "You've been invited to a multilingual conversation on Preter. Pick your language and join.",
       },
       { property: "og:title", content: "Join a conversation | Preter" },
       { property: "og:description", content: "Pick your language and join the conversation." },

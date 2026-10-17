@@ -31,9 +31,9 @@ export const getForUser = query({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .take(500);
 
-    let docs = (
-      await Promise.all(memberships.map((m) => ctx.db.get(m.conversationId)))
-    ).filter((c): c is NonNullable<typeof c> => !!c);
+    let docs = (await Promise.all(memberships.map((m) => ctx.db.get(m.conversationId)))).filter(
+      (c): c is NonNullable<typeof c> => !!c,
+    );
 
     // Fallback for conversations created before membership rows existed.
     if (docs.length === 0) {
@@ -188,7 +188,6 @@ export const addParticipant = mutation({
 });
 
 export const reportConversation = mutation({
-
   args: {
     reporterId: v.string(),
     targetId: v.string(),

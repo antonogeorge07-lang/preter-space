@@ -2,9 +2,9 @@
  * Reactive chat data layer, backed entirely by Convex.
  * Everything here is a live subscription (`useQuery`) or a `useMutation`.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useConvexQuery, useConvexMutation, useConvexAction } from '@/lib/convex';
-import { convexApi } from '@/lib/convexApi';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConvexQuery, useConvexMutation, useConvexAction } from "@/lib/convex";
+import { convexApi } from "@/lib/convexApi";
 import {
   toUiConversation,
   toUiMessage,
@@ -13,9 +13,9 @@ import {
   presenceLabel,
   toConvexConversationPatch,
   userKey,
-} from '@/lib/chatMap';
+} from "@/lib/chatMap";
 
-const SKIP = 'skip';
+const SKIP = "skip";
 
 /** Convex identifies people by email - keep the mirror row fresh. */
 export function useChatIdentity(currentUser) {
@@ -34,7 +34,13 @@ export function useChatIdentity(currentUser) {
       ...(explicitLang ? { language: explicitLang } : {}),
       ...(currentUser?.avatar_url ? { avatarUrl: currentUser.avatar_url } : {}),
     }).catch(() => {});
-  }, [key, currentUser?.full_name, currentUser?.default_language, currentUser?.language_set, currentUser?.avatar_url]);
+  }, [
+    key,
+    currentUser?.full_name,
+    currentUser?.default_language,
+    currentUser?.language_set,
+    currentUser?.avatar_url,
+  ]);
 
   return {
     key,
@@ -46,7 +52,10 @@ export function useChatIdentity(currentUser) {
 
 /** Live language preferences for a set of participants, keyed by email. */
 export function useParticipantLanguages(emails) {
-  const list = useMemo(() => [...new Set((emails || []).filter(Boolean))].sort(), [emails?.join('|')]);
+  const list = useMemo(
+    () => [...new Set((emails || []).filter(Boolean))].sort(),
+    [emails?.join("|")],
+  );
   const langs = useConvexQuery(
     convexApi.users.languagesByEmail,
     list.length ? { emails: list } : SKIP,
@@ -113,7 +122,7 @@ export function useChatMessages(conversationId, { blockedUserIds = [] } = {}) {
     return docs
       .filter((d) => !blockedUserIds.includes(d.senderId))
       .map((d) => toUiMessage(d, reactions, readBy));
-  }, [view, reactionDocs, receiptDocs, blockedUserIds.join(',')]);
+  }, [view, reactionDocs, receiptDocs, blockedUserIds.join(",")]);
 
   const loadOlder = useCallback(() => {
     if (!hasMore || page === undefined) return;

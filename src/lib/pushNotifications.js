@@ -7,13 +7,13 @@
  *   store both live in Convex.
  * - Still shows a local notification when the tab is merely hidden.
  */
-import { convexChat } from '@/lib/convexChat';
+import { convexChat } from "@/lib/convexChat";
 
 let swRegistration = null;
 
 function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(base64);
   const output = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
@@ -22,9 +22,9 @@ function urlBase64ToUint8Array(base64String) {
 
 function bufferToBase64Url(buffer) {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
+  let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 /**
@@ -32,14 +32,14 @@ function bufferToBase64Url(buffer) {
  * subscription for `userKey` (the Convex user identity, i.e. email).
  */
 export async function registerPushNotifications(userKey) {
-  if (typeof window === 'undefined') return null;
-  if (!('serviceWorker' in navigator)) return null;
+  if (typeof window === "undefined") return null;
+  if (!("serviceWorker" in navigator)) return null;
   try {
-    swRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-    if ('Notification' in window && Notification.permission === 'default') {
+    swRegistration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    if ("Notification" in window && Notification.permission === "default") {
       await Notification.requestPermission();
     }
-    if (userKey && Notification.permission === 'granted') {
+    if (userKey && Notification.permission === "granted") {
       await subscribeToBackgroundPush(userKey);
     }
     return swRegistration;
@@ -49,7 +49,7 @@ export async function registerPushNotifications(userKey) {
 }
 
 async function subscribeToBackgroundPush(userKey) {
-  if (!swRegistration || !('PushManager' in window)) return null;
+  if (!swRegistration || !("PushManager" in window)) return null;
   try {
     const publicKey = await convexChat.getPushPublicKey();
     if (!publicKey) return null;
@@ -63,8 +63,8 @@ async function subscribeToBackgroundPush(userKey) {
       });
     }
 
-    const p256dh = subscription.getKey?.('p256dh');
-    const auth = subscription.getKey?.('auth');
+    const p256dh = subscription.getKey?.("p256dh");
+    const auth = subscription.getKey?.("auth");
     if (!p256dh || !auth) return null;
 
     await convexChat.savePushSubscription({
@@ -81,7 +81,7 @@ async function subscribeToBackgroundPush(userKey) {
 
 /** Remove this browser's background push subscription (e.g. on sign out). */
 export async function unsubscribeFromBackgroundPush() {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
@@ -96,16 +96,16 @@ export async function unsubscribeFromBackgroundPush() {
 /**
  * Show a local notification when the tab is hidden.
  */
-export function notifyIfHidden({ title = 'Preter', body, url = '/' }) {
-  if (typeof window === 'undefined') return;
-  if (document.visibilityState === 'visible') return;
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+export function notifyIfHidden({ title = "Preter", body, url = "/" }) {
+  if (typeof window === "undefined") return;
+  if (document.visibilityState === "visible") return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
 
   const options = {
     body,
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: 'preter-message',
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    tag: "preter-message",
     data: { url },
   };
 
@@ -116,7 +116,11 @@ export function notifyIfHidden({ title = 'Preter', body, url = '/' }) {
 
   try {
     const n = new Notification(title, options);
-    n.onclick = () => { window.focus(); window.location.href = url; n.close(); };
+    n.onclick = () => {
+      window.focus();
+      window.location.href = url;
+      n.close();
+    };
   } catch {
     // Notification constructor unsupported (e.g. Android Chrome) - ignore.
   }

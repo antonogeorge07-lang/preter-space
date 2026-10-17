@@ -6,7 +6,10 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in | Preter" },
-      { name: "description", content: "Sign in to your Preter account to continue your conversations." },
+      {
+        name: "description",
+        content: "Sign in to your Preter account to continue your conversations.",
+      },
       { property: "og:title", content: "Sign in | Preter" },
       { property: "og:description", content: "Sign in to your Preter account." },
       { property: "og:type", content: "website" },

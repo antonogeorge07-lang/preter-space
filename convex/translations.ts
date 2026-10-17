@@ -24,9 +24,7 @@ export const getCached = query({
     for (const lang of [...new Set(args.langs)]) {
       const row = await ctx.db
         .query("translation_cache")
-        .withIndex("by_hash_lang", (q) =>
-          q.eq("textHash", args.textHash).eq("targetLang", lang),
-        )
+        .withIndex("by_hash_lang", (q) => q.eq("textHash", args.textHash).eq("targetLang", lang))
         .first();
       if (row) out[lang] = row.translation;
     }

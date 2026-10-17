@@ -14,7 +14,10 @@ export const deleteAccount = createServerFn({ method: "POST" })
 
     await supabaseAdmin.from("messages").delete().eq("sender_id", userId);
     await supabaseAdmin.from("user_presence").delete().eq("user_id", userId);
-    await supabaseAdmin.from("call_sessions").delete().or(`caller_id.eq.${userId},callee_id.eq.${userId}`);
+    await supabaseAdmin
+      .from("call_sessions")
+      .delete()
+      .or(`caller_id.eq.${userId},callee_id.eq.${userId}`);
     await supabaseAdmin.from("conversations").delete().eq("created_by", userId);
     await supabaseAdmin.from("profiles").delete().eq("id", userId);
 
