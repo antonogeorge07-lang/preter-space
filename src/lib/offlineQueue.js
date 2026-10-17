@@ -1,5 +1,5 @@
 // Offline message queue - persisted to localStorage
-const QUEUE_KEY = 'vivaloca_offline_queue';
+const QUEUE_KEY = "vivaloca_offline_queue";
 
 export function enqueue(item) {
   const q = getQueue();
@@ -8,11 +8,15 @@ export function enqueue(item) {
 }
 
 export function getQueue() {
-  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
+  } catch {
+    return [];
+  }
 }
 
 export function removeFromQueue(id) {
-  const q = getQueue().filter(i => i._id !== id);
+  const q = getQueue().filter((i) => i._id !== id);
   localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 /**
  * Keyboard-aware viewport sizing for iOS/Android.
@@ -15,7 +15,7 @@ export default function useKeyboardViewport() {
   const [kbInset, setKbInset] = useState(0);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     const root = document.documentElement;
     const vv = window.visualViewport;
 
@@ -24,33 +24,33 @@ export default function useKeyboardViewport() {
       // On iOS the page scrolls up behind the keyboard; offsetTop captures that.
       const offsetTop = vv ? vv.offsetTop : 0;
       const inset = Math.max(0, Math.round(window.innerHeight - height - offsetTop));
-      root.style.setProperty('--app-height', `${Math.round(height)}px`);
-      root.style.setProperty('--kb-inset', `${inset}px`);
+      root.style.setProperty("--app-height", `${Math.round(height)}px`);
+      root.style.setProperty("--kb-inset", `${inset}px`);
       // Only treat it as a keyboard (not browser chrome) above a threshold.
       const keyboard = inset > 120 ? inset : 0;
-      root.classList.toggle('keyboard-open', keyboard > 0);
+      root.classList.toggle("keyboard-open", keyboard > 0);
       setKbInset((prev) => (prev === keyboard ? prev : keyboard));
     };
 
     apply();
 
     if (vv) {
-      vv.addEventListener('resize', apply);
-      vv.addEventListener('scroll', apply);
+      vv.addEventListener("resize", apply);
+      vv.addEventListener("scroll", apply);
     }
-    window.addEventListener('resize', apply);
-    window.addEventListener('orientationchange', apply);
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
 
     return () => {
       if (vv) {
-        vv.removeEventListener('resize', apply);
-        vv.removeEventListener('scroll', apply);
+        vv.removeEventListener("resize", apply);
+        vv.removeEventListener("scroll", apply);
       }
-      window.removeEventListener('resize', apply);
-      window.removeEventListener('orientationchange', apply);
-      root.classList.remove('keyboard-open');
-      root.style.removeProperty('--app-height');
-      root.style.removeProperty('--kb-inset');
+      window.removeEventListener("resize", apply);
+      window.removeEventListener("orientationchange", apply);
+      root.classList.remove("keyboard-open");
+      root.style.removeProperty("--app-height");
+      root.style.removeProperty("--kb-inset");
     };
   }, []);
 

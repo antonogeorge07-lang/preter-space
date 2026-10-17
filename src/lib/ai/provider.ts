@@ -29,11 +29,7 @@ function config() {
   return { baseUrl, apiKey, model };
 }
 
-export async function requestAI({
-  messages,
-  model,
-  json = false,
-}: AiRequest): Promise<string> {
+export async function requestAI({ messages, model, json = false }: AiRequest): Promise<string> {
   const cfg = config();
 
   const response = await fetch(`${cfg.baseUrl}/chat/completions`, {

@@ -1,4 +1,4 @@
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from "@/lib/AuthContext";
 
 export function useCurrentUser() {
   const { user } = useAuth();

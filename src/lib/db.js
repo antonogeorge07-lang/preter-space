@@ -87,7 +87,9 @@ function entity(name) {
       return normalize(data);
     },
     async create(payload) {
-      const data = unwrap(await supabase.from(table).insert(stripAliases(payload)).select().single());
+      const data = unwrap(
+        await supabase.from(table).insert(stripAliases(payload)).select().single(),
+      );
       return normalize(data);
     },
     async update(id, payload) {
@@ -159,7 +161,9 @@ const auth = {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data?.user) throw new Error("Not authenticated");
     const user = data.user;
-    const profile = unwrap(await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle());
+    const profile = unwrap(
+      await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+    );
     return {
       id: user.id,
       email: user.email,
@@ -183,7 +187,9 @@ const auth = {
     }
     if (Object.keys(clean).length === 0) return null;
     return normalize(
-      unwrap(await supabase.from("profiles").update(clean).eq("id", data.user.id).select().single()),
+      unwrap(
+        await supabase.from("profiles").update(clean).eq("id", data.user.id).select().single(),
+      ),
     );
   },
   async loginViaEmailPassword(email, password) {
@@ -235,17 +241,13 @@ const auth = {
   async loginWithProvider(provider, redirectPath = "/") {
     const supportedProviders = new Set(["google", "apple", "azure"]);
 
-    const normalizedProvider =
-      provider === "microsoft" ? "azure" : provider;
+    const normalizedProvider = provider === "microsoft" ? "azure" : provider;
 
     if (!supportedProviders.has(normalizedProvider)) {
       throw new Error(`Unsupported OAuth provider: ${provider}`);
     }
 
-    const redirectTo = new URL(
-      redirectPath,
-      window.location.origin,
-    ).toString();
+    const redirectTo = new URL(redirectPath, window.location.origin).toString();
 
     const { lovable } = await import("@/integrations/lovable/index");
     const result = await lovable.auth.signInWithOAuth(

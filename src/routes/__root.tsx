@@ -14,7 +14,6 @@ import { AuthProvider } from "@/lib/AuthContext";
 import { ConvexClientProvider } from "@/lib/convex";
 import { Toaster } from "@/components/ui/toaster";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -128,6 +127,5 @@ function RootComponent() {
         </AuthProvider>
       </ConvexClientProvider>
     </QueryClientProvider>
-
   );
 }

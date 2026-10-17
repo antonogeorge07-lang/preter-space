@@ -74,8 +74,6 @@ export const start = mutation({
   },
 });
 
-
-
 export const answer = mutation({
   args: { callId: v.id("calls"), answer: v.optional(v.any()) },
   handler: async (ctx, args) => {

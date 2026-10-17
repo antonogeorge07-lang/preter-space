@@ -3,13 +3,13 @@
  * (WebRTC signaling loops, offline-queue flush, modals).
  * Reactive reads in the chat UI use the hooks in `@/hooks/useConvexChat`.
  */
-import { getConvexClient } from '@/lib/convex';
-import { convexApi } from '@/lib/convexApi';
-import { toConvexConversationPatch } from '@/lib/chatMap';
+import { getConvexClient } from "@/lib/convex";
+import { convexApi } from "@/lib/convexApi";
+import { toConvexConversationPatch } from "@/lib/chatMap";
 
 function client() {
   const c = getConvexClient();
-  if (!c) throw new Error('Convex is not configured (missing VITE_CONVEX_URL)');
+  if (!c) throw new Error("Convex is not configured (missing VITE_CONVEX_URL)");
   return c;
 }
 
@@ -31,7 +31,8 @@ export const convexChat = {
   },
 
   // ── conversations ───────────────────────────────────────────────────────
-  getConversation: (conversationId) => client().query(convexApi.conversations.get, { conversationId }),
+  getConversation: (conversationId) =>
+    client().query(convexApi.conversations.get, { conversationId }),
   getConversationByInvite: (inviteCode) =>
     client().query(convexApi.conversations.getByInviteCode, { inviteCode }),
   createConversation: (input) => client().mutation(convexApi.conversations.create, input),
@@ -44,11 +45,11 @@ export const convexChat = {
   deleteConversation: (conversationId) =>
     client().mutation(convexApi.conversations.remove, { conversationId }),
 
-
   // ── messages ────────────────────────────────────────────────────────────
   sendMessage: (args) => client().mutation(convexApi.messages.send, args),
   updateMessage: (args) => client().mutation(convexApi.messages.update, args),
-  deleteMessage: (messageId) => client().mutation(convexApi.messages.update, { messageId, deleted: true }),
+  deleteMessage: (messageId) =>
+    client().mutation(convexApi.messages.update, { messageId, deleted: true }),
 
   // ── presence / receipts / reactions ─────────────────────────────────────
   heartbeat: (args) => client().mutation(convexApi.presence.heartbeat, args),

@@ -2,7 +2,7 @@
  * Mapping between Convex documents and the shapes the chat UI components use.
  * Convex identifies people by email, which is what `participantIds` / `senderId` hold.
  */
-import { safeDisplayName, nameFromEmail } from '@/lib/displayName';
+import { safeDisplayName, nameFromEmail } from "@/lib/displayName";
 
 export const userKey = (user) => user?.email || null;
 
@@ -12,7 +12,7 @@ export function toUiConversation(doc, myKey) {
   const rawNames = doc.participantNames || [];
   const ids = doc.participantIds || [];
   // Never let an avatar URL (or other junk) reach a text slot.
-  const names = ids.map((id, i) => safeDisplayName(rawNames[i], nameFromEmail(id) || 'Contact'));
+  const names = ids.map((id, i) => safeDisplayName(rawNames[i], nameFromEmail(id) || "Contact"));
   const otherIdx = ids.findIndex((id) => id !== myKey);
   const otherName = otherIdx >= 0 ? names[otherIdx] : undefined;
   return {
@@ -22,13 +22,13 @@ export function toUiConversation(doc, myKey) {
     participant_ids: ids,
     participant_names: names,
     participant_name: doc.isGroup
-      ? safeDisplayName(doc.title, 'Group')
-      : otherName || safeDisplayName(doc.title, 'Contact'),
+      ? safeDisplayName(doc.title, "Group")
+      : otherName || safeDisplayName(doc.title, "Contact"),
     participant_avatar: doc.avatarUrl || null,
 
     participant_languages: JSON.stringify(doc.participantLanguages || {}),
-    preferred_language: doc.preferredLanguage || 'en',
-    last_message_preview: doc.lastMessagePreview || '',
+    preferred_language: doc.preferredLanguage || "en",
+    last_message_preview: doc.lastMessagePreview || "",
     last_message_time: doc.lastMessageTime ? new Date(doc.lastMessageTime).toISOString() : null,
     unread_counts: JSON.stringify(doc.unreadCounts || {}),
     typing_user_ids: JSON.stringify(doc.typingUserIds || []),
@@ -42,23 +42,23 @@ export function toUiConversation(doc, myKey) {
 }
 
 const JSON_FIELDS = {
-  participant_languages: 'participantLanguages',
-  unread_counts: 'unreadCounts',
+  participant_languages: "participantLanguages",
+  unread_counts: "unreadCounts",
 };
 
 const PLAIN_FIELDS = {
-  participant_ids: 'participantIds',
-  participant_names: 'participantNames',
-  participant_avatar: 'avatarUrl',
-  preferred_language: 'preferredLanguage',
-  last_message_preview: 'lastMessagePreview',
-  pinned: 'pinned',
-  archived: 'archived',
-  muted: 'muted',
-  invite_code: 'inviteCode',
-  invite_open: 'inviteOpen',
-  typing_user_ids: 'typingUserIds',
-  title: 'title',
+  participant_ids: "participantIds",
+  participant_names: "participantNames",
+  participant_avatar: "avatarUrl",
+  preferred_language: "preferredLanguage",
+  last_message_preview: "lastMessagePreview",
+  pinned: "pinned",
+  archived: "archived",
+  muted: "muted",
+  invite_code: "inviteCode",
+  invite_open: "inviteOpen",
+  typing_user_ids: "typingUserIds",
+  title: "title",
 };
 
 /** UI conversation patch (snake_case, JSON strings) -> Convex mutation args */
@@ -67,13 +67,13 @@ export function toConvexConversationPatch(patch = {}) {
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) continue;
     if (JSON_FIELDS[key]) {
-      out[JSON_FIELDS[key]] = typeof value === 'string' ? safeJson(value, {}) : value;
-    } else if (key === 'typing_user_ids') {
-      out.typingUserIds = typeof value === 'string' ? safeJson(value, []) : value;
-    } else if (key === 'participant_name') {
+      out[JSON_FIELDS[key]] = typeof value === "string" ? safeJson(value, {}) : value;
+    } else if (key === "typing_user_ids") {
+      out.typingUserIds = typeof value === "string" ? safeJson(value, []) : value;
+    } else if (key === "participant_name") {
       out.title = value;
-    } else if (key === 'last_message_time') {
-      out.lastMessageTime = typeof value === 'string' ? Date.parse(value) : value;
+    } else if (key === "last_message_time") {
+      out.lastMessageTime = typeof value === "string" ? Date.parse(value) : value;
     } else if (PLAIN_FIELDS[key]) {
       out[PLAIN_FIELDS[key]] = value;
     }
@@ -83,7 +83,7 @@ export function toConvexConversationPatch(patch = {}) {
 
 export function safeJson(raw, fallback) {
   try {
-    return typeof raw === 'string' ? JSON.parse(raw) : (raw ?? fallback);
+    return typeof raw === "string" ? JSON.parse(raw) : (raw ?? fallback);
   } catch {
     return fallback;
   }
@@ -101,12 +101,12 @@ export function toUiMessage(doc, reactionsByMessage, readBy) {
     conversation_id: doc.conversationId,
     sender_id: doc.senderId,
     sender_name: meta.senderName || doc.senderId,
-    content: doc.text || '',
-    translated_content: meta.translatedContent || '',
+    content: doc.text || "",
+    translated_content: meta.translatedContent || "",
     translations: doc.translations || {},
-    original_language: meta.originalLanguage || '',
-    target_language: meta.targetLanguage || '',
-    type: meta.type || 'text',
+    original_language: meta.originalLanguage || "",
+    target_language: meta.targetLanguage || "",
+    type: meta.type || "text",
     image_url: meta.imageUrl || null,
     video_url: meta.videoUrl || null,
     audio_url: meta.audioUrl || null,
@@ -144,7 +144,9 @@ export function deriveReadBy(messageDocs = [], receipts = []) {
   const map = new Map();
   for (const msg of messageDocs) {
     const readers = receipts
-      .filter((r) => r.userId !== msg.senderId && r.lastReadAt >= (msg.createdAt || msg._creationTime))
+      .filter(
+        (r) => r.userId !== msg.senderId && r.lastReadAt >= (msg.createdAt || msg._creationTime),
+      )
       .map((r) => r.userId);
     map.set(msg._id, readers);
   }
@@ -155,7 +157,7 @@ export function deriveReadBy(messageDocs = [], receipts = []) {
 export function presenceLabel(doc) {
   if (!doc) return null;
   const diff = (Date.now() - (doc.updatedAt || 0)) / 1000;
-  if (doc.isOnline && diff < 90) return 'online';
+  if (doc.isOnline && diff < 90) return "online";
   const mins = Math.round(diff / 60);
   if (mins < 60) return `${Math.max(mins, 1)}m ago`;
   if (mins < 1440) return `${Math.round(mins / 60)}h ago`;

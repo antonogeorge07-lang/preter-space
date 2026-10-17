@@ -168,9 +168,7 @@ async function translateBatch(text: string, langs: string[]) {
   } = {};
 
   try {
-    parsed = JSON.parse(
-      raw.replace(/^```(?:json)?|```$/g, "").trim(),
-    );
+    parsed = JSON.parse(raw.replace(/^```(?:json)?|```$/g, "").trim());
   } catch {
     parsed = {};
   }
@@ -179,8 +177,7 @@ async function translateBatch(text: string, langs: string[]) {
 
   for (const lang of langs) {
     const value = parsed.translations?.[lang];
-    translations[lang] =
-      parsed.detected === lang ? text : value || text;
+    translations[lang] = parsed.detected === lang ? text : value || text;
   }
 
   return {
