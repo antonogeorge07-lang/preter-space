@@ -14,7 +14,7 @@ export default {
       issuer,
       applicationID: "authenticated",
       jwks,
-      algorithm: "RS256",
+      algorithm: "ES256",
     },
   ],
 } satisfies AuthConfig;
