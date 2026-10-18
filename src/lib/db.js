@@ -304,13 +304,31 @@ export const db = {
     Core: {
       UploadFile: uploadFile,
       async InvokeLLM({ prompt }) {
-        return invokeLLM({ data: { prompt } });
+        const { data, error } = await supabase.auth.getSession();
+        if (error || !data.session?.access_token) {
+          throw new Error("Authentication required");
+        }
+        return invokeLLM({
+          data: { prompt },
+          headers: {
+            Authorization: `Bearer ${data.session.access_token}`,
+          },
+        });
       },
       async TranscribeAudio({ audio_url }) {
         return transcribeAudio({ data: { audioUrl: audio_url } });
       },
       async SendEmail({ to, subject, body }) {
-        return sendInviteEmail({ data: { to, subject, body } });
+        const { data, error } = await supabase.auth.getSession();
+        if (error || !data.session?.access_token) {
+          throw new Error("Authentication required");
+        }
+        return sendInviteEmail({
+          data: { to, subject, body },
+          headers: {
+            Authorization: `Bearer ${data.session.access_token}`,
+          },
+        });
       },
     },
   },

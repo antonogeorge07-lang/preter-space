@@ -1,8 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requestAI, parseAIJson } from "@/lib/ai/provider";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+
+const aiInput = z.object({
+  prompt: z.string().trim().min(1).max(4000),
+});
+
+const emailInput = z.object({
+  to: z.string().email().max(254),
+  subject: z.string().trim().min(1).max(150),
+  body: z.string().trim().min(1).max(4000),
+});
 
 export const invokeLLM = createServerFn({ method: "POST" })
-  .validator((data: { prompt: string }) => data)
+  .middleware([requireSupabaseAuth])
+  .validator((data: unknown) => aiInput.parse(data))
   .handler(async ({ data }) => {
     const content = await requestAI({
       json: true,
@@ -30,7 +43,8 @@ export const transcribeAudio = createServerFn({ method: "POST" })
   });
 
 export const sendInviteEmail = createServerFn({ method: "POST" })
-  .validator((data: { to: string; subject: string; body: string }) => data)
+  .middleware([requireSupabaseAuth])
+  .validator((data: unknown) => emailInput.parse(data))
   .handler(async ({ data }) => {
     const apiKey = process.env["LOVABLE_API_KEY"];
 
