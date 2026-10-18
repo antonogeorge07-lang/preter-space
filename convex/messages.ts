@@ -242,6 +242,12 @@ export const sendWithTranslation = action({
       throw new Error("Forbidden");
     }
 
+    // Check conversation access before any translation or cache operation.
+    // conversations.get enforces membership against verified JWT identity.
+    await ctx.runQuery(api.conversations.get, {
+      conversationId: args.conversationId,
+    });
+
     const aiConfigured = isAIConfigured();
     const translations: Record<string, string> = {};
     let detectedLanguage = "";

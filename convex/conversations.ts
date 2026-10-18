@@ -66,14 +66,13 @@ export const getByInviteCode = query({
     const all = await ctx.db.query("conversations").take(2000);
     const conversation = all.find((c) => c.inviteCode === args.inviteCode) ?? null;
     if (!conversation || !conversation.inviteOpen) return null;
+    // Explicit invitation preview: never expose the conversation record.
     return {
-      ...conversation,
-      participantIds: [],
-      participantNames: [],
-      participantLanguages: undefined,
-      lastMessagePreview: undefined,
-      unreadCounts: undefined,
-      typingUserIds: undefined,
+      _id: conversation._id,
+      title: conversation.title,
+      isGroup: conversation.isGroup,
+      avatarUrl: conversation.avatarUrl,
+      inviteOpen: true,
     };
   },
 });
