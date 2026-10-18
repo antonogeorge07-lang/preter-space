@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -17,7 +17,7 @@ export function hashText(text: string) {
   return `${(h >>> 0).toString(36)}-${normalised.length.toString(36)}`;
 }
 
-export const getCached = query({
+export const getCached = internalQuery({
   args: { textHash: v.string(), langs: v.array(v.string()) },
   handler: async (ctx, args) => {
     const out: Record<string, string> = {};
@@ -32,7 +32,7 @@ export const getCached = query({
   },
 });
 
-export const putCached = mutation({
+export const putCached = internalMutation({
   args: {
     textHash: v.string(),
     sourceText: v.string(),

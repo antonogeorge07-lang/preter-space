@@ -1,6 +1,6 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { hashText } from "./translations";
 import { isAIConfigured, requestAIJson } from "./lib/ai";
 import { requireConversationMember } from "./lib/authorization";
@@ -90,7 +90,7 @@ export const send = mutation({
     await ctx.db.patch(args.conversationId, { lastMessageTime: Date.now() });
 
     // Background push to the other participants (no-op without VAPID keys).
-    await ctx.scheduler.runAfter(0, api.push.notifyMessage, {
+    await ctx.scheduler.runAfter(0, internal.push.notifyMessage, {
       conversationId: args.conversationId,
       senderId: args.senderId,
       senderName: (args.meta as { sender_name?: string } | undefined)?.sender_name,
@@ -257,7 +257,7 @@ export const sendWithTranslation = action({
       const textHash = hashText(args.text);
 
       if (langs.length > 0) {
-        const cached = await ctx.runQuery(api.translations.getCached, { textHash, langs });
+        const cached = await ctx.runQuery(internal.translations.getCached, { textHash, langs });
         Object.assign(translations, cached);
       }
 
@@ -267,7 +267,7 @@ export const sendWithTranslation = action({
           const result = await translateBatch(args.text, missing);
           detectedLanguage = result.detected;
           Object.assign(translations, result.translations);
-          await ctx.runMutation(api.translations.putCached, {
+          await ctx.runMutation(internal.translations.putCached, {
             textHash,
             sourceText: args.text,
             ...(result.detected ? { detectedLang: result.detected } : {}),

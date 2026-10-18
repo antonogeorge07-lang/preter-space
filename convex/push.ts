@@ -1,8 +1,8 @@
 "use node";
 
-import { action } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 import webpush from "web-push";
 
 /**
@@ -22,7 +22,7 @@ function configure() {
   return true;
 }
 
-export const notifyMessage = action({
+export const notifyMessage = internalAction({
   args: {
     conversationId: v.id("conversations"),
     senderId: v.string(),
@@ -32,13 +32,13 @@ export const notifyMessage = action({
   handler: async (ctx, args) => {
     if (!configure()) return null;
 
-    const recipients: string[] = await ctx.runQuery(api.pushData.recipientsFor, {
+    const recipients: string[] = await ctx.runQuery(internal.pushData.recipientsFor, {
       conversationId: args.conversationId,
       senderId: args.senderId,
     });
     if (recipients.length === 0) return null;
 
-    const subs = await ctx.runQuery(api.pushData.subscriptionsFor, { userIds: recipients });
+    const subs = await ctx.runQuery(internal.pushData.subscriptionsFor, { userIds: recipients });
 
     const payload = JSON.stringify({
       title: args.senderName || "Preter",
@@ -60,7 +60,7 @@ export const notifyMessage = action({
           const status = (error as { statusCode?: number })?.statusCode;
           // 404/410 mean the browser dropped the subscription: clean it up.
           if (status === 404 || status === 410) {
-            await ctx.runMutation(api.pushData.unsubscribe, { endpoint: sub.endpoint });
+            await ctx.runMutation(internal.pushData.unsubscribeExpired, { endpoint: sub.endpoint });
           }
         }
       }),
@@ -70,7 +70,7 @@ export const notifyMessage = action({
   },
 });
 
-export const notifyCall = action({
+export const notifyCall = internalAction({
   args: {
     calleeId: v.string(),
     callerName: v.optional(v.string()),
@@ -80,7 +80,9 @@ export const notifyCall = action({
   handler: async (ctx, args) => {
     if (!configure()) return null;
 
-    const subs = await ctx.runQuery(api.pushData.subscriptionsFor, { userIds: [args.calleeId] });
+    const subs = await ctx.runQuery(internal.pushData.subscriptionsFor, {
+      userIds: [args.calleeId],
+    });
     if (subs.length === 0) return null;
 
     const payload = JSON.stringify({
@@ -101,7 +103,7 @@ export const notifyCall = action({
         } catch (error) {
           const status = (error as { statusCode?: number })?.statusCode;
           if (status === 404 || status === 410) {
-            await ctx.runMutation(api.pushData.unsubscribe, { endpoint: sub.endpoint });
+            await ctx.runMutation(internal.pushData.unsubscribeExpired, { endpoint: sub.endpoint });
           }
         }
       }),

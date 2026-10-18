@@ -60,7 +60,7 @@ export const start = mutation({
     });
 
     // Ring the callee even when their app is closed/backgrounded.
-    await ctx.scheduler.runAfter(0, api.push.notifyCall, {
+    await ctx.scheduler.runAfter(0, internal.push.notifyCall, {
       calleeId: args.calleeId,
       callerName: args.callerName,
       isVideo: args.isVideo ?? false,

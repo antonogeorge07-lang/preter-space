@@ -1,4 +1,5 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery, internalMutation } from "./_generated/server";
+import { requireIdentity } from "./lib/authorization";
 import { v } from "convex/values";
 
 /**
@@ -18,11 +19,18 @@ export const subscribe = mutation({
     auth: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (args.userId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
     const existing = await ctx.db
       .query("push_subscriptions")
       .withIndex("by_endpoint", (q) => q.eq("endpoint", args.endpoint))
       .first();
     if (existing) {
+      if (existing.userId.toLowerCase() !== identity.email.toLowerCase()) {
+        throw new Error("Forbidden");
+      }
       await ctx.db.patch(existing._id, {
         userId: args.userId,
         p256dh: args.p256dh,
@@ -38,6 +46,24 @@ export const subscribe = mutation({
 export const unsubscribe = mutation({
   args: { endpoint: v.string() },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    const rows = await ctx.db
+      .query("push_subscriptions")
+      .withIndex("by_endpoint", (q) => q.eq("endpoint", args.endpoint))
+      .take(5);
+    for (const row of rows) {
+      if (row.userId.toLowerCase() !== identity.email.toLowerCase()) {
+        throw new Error("Forbidden");
+      }
+    }
+    for (const row of rows) await ctx.db.delete(row._id);
+    return null;
+  },
+});
+
+export const unsubscribeExpired = internalMutation({
+  args: { endpoint: v.string() },
+  handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("push_subscriptions")
       .withIndex("by_endpoint", (q) => q.eq("endpoint", args.endpoint))
@@ -47,7 +73,7 @@ export const unsubscribe = mutation({
   },
 });
 
-export const recipientsFor = query({
+export const recipientsFor = internalQuery({
   args: { conversationId: v.id("conversations"), senderId: v.string() },
   handler: async (ctx, args) => {
     const conversation = await ctx.db.get(args.conversationId);
@@ -56,7 +82,7 @@ export const recipientsFor = query({
   },
 });
 
-export const subscriptionsFor = query({
+export const subscriptionsFor = internalQuery({
   args: { userIds: v.array(v.string()) },
   handler: async (ctx, args) => {
     const out: Array<{ endpoint: string; p256dh: string; auth: string }> = [];
