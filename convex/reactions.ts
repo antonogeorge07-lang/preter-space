@@ -1,9 +1,13 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireIdentity, requireConversationMember } from "./lib/authorization";
 
 export const listForMessage = query({
   args: { messageId: v.id("messages") },
   handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message unavailable");
+    await requireConversationMember(ctx, message.conversationId);
     return await ctx.db
       .query("reactions")
       .withIndex("by_message", (q) => q.eq("messageId", args.messageId))
@@ -18,6 +22,7 @@ export const listForConversation = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireConversationMember(ctx, args.conversationId);
     const messagesQuery = ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId));
@@ -46,6 +51,12 @@ export const toggle = mutation({
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message unavailable");
+    const { identity } = await requireConversationMember(ctx, message.conversationId);
+    if (args.userId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
     const existing = await ctx.db
       .query("reactions")
       .withIndex("by_message_user", (q) =>

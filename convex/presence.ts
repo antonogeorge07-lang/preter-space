@@ -1,9 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireIdentity, requireConversationMember } from "./lib/authorization";
 
 export const listForConversation = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
+    await requireConversationMember(ctx, args.conversationId);
     return await ctx.db
       .query("presence")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
@@ -14,6 +16,10 @@ export const listForConversation = query({
 export const getForUser = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (args.userId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
     return await ctx.db
       .query("presence")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -29,6 +35,13 @@ export const heartbeat = mutation({
     isTyping: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (args.userId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+    if (args.conversationId) {
+      await requireConversationMember(ctx, args.conversationId);
+    }
     const existing = await ctx.db
       .query("presence")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))

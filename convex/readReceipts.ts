@@ -1,9 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireIdentity, requireConversationMember } from "./lib/authorization";
 
 export const listForConversation = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
+    await requireConversationMember(ctx, args.conversationId);
     return await ctx.db
       .query("read_receipts")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
@@ -18,6 +20,16 @@ export const markRead = mutation({
     lastReadMessageId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
+    const { identity } = await requireConversationMember(ctx, args.conversationId);
+    if (args.userId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+    if (args.lastReadMessageId) {
+      const message = await ctx.db.get(args.lastReadMessageId);
+      if (!message || message.conversationId !== args.conversationId) {
+        throw new Error("Invalid read receipt message");
+      }
+    }
     const existing = await ctx.db
       .query("read_receipts")
       .withIndex("by_conversation_user", (q) =>
