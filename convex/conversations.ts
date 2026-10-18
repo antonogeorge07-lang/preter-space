@@ -1,4 +1,5 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
+import { requireIdentity, requireConversationMember } from "./lib/authorization";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -26,6 +27,11 @@ async function syncMembers(
 export const getForUser = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (args.userId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+
     const memberships = await ctx.db
       .query("conversation_members")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -47,14 +53,28 @@ export const getForUser = query({
 
 export const get = query({
   args: { conversationId: v.id("conversations") },
-  handler: async (ctx, args) => await ctx.db.get(args.conversationId),
+  handler: async (ctx, args) => {
+    const { conversation } = await requireConversationMember(ctx, args.conversationId);
+    return conversation;
+  },
 });
 
 export const getByInviteCode = query({
   args: { inviteCode: v.string() },
   handler: async (ctx, args) => {
+    await requireIdentity(ctx);
     const all = await ctx.db.query("conversations").take(2000);
-    return all.find((c) => c.inviteCode === args.inviteCode) ?? null;
+    const conversation = all.find((c) => c.inviteCode === args.inviteCode) ?? null;
+    if (!conversation || !conversation.inviteOpen) return null;
+    return {
+      ...conversation,
+      participantIds: [],
+      participantNames: [],
+      participantLanguages: undefined,
+      lastMessagePreview: undefined,
+      unreadCounts: undefined,
+      typingUserIds: undefined,
+    };
   },
 });
 
@@ -84,6 +104,16 @@ export const create = mutation({
     participantIds: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    const email = identity.email.toLowerCase();
+
+    if (
+      args.creatorId.toLowerCase() !== email ||
+      !args.participantIds.some((participant) => participant.toLowerCase() === email)
+    ) {
+      throw new Error("Forbidden");
+    }
+
     const conversationId = await ctx.db.insert("conversations", {
       ...args,
       lastMessageTime: args.lastMessageTime ?? Date.now(),
@@ -96,6 +126,12 @@ export const create = mutation({
 export const update = mutation({
   args: { conversationId: v.id("conversations"), ...uiFields },
   handler: async (ctx, args) => {
+    const { identity, conversation } = await requireConversationMember(ctx, args.conversationId);
+
+    if (conversation.creatorId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+
     const { conversationId, ...patch } = args;
     const clean = Object.fromEntries(Object.entries(patch).filter(([, v2]) => v2 !== undefined));
     if (Object.keys(clean).length === 0) return conversationId;
@@ -110,6 +146,12 @@ export const update = mutation({
 export const remove = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
+    const { identity, conversation } = await requireConversationMember(ctx, args.conversationId);
+
+    if (conversation.creatorId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
@@ -149,8 +191,11 @@ export const addParticipant = mutation({
     language: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation) throw new Error("Conversation not found");
+    const { identity, conversation } = await requireConversationMember(ctx, args.conversationId);
+
+    if (conversation.creatorId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
 
     if (conversation.participantIds.includes(args.userId)) {
       return { added: false };
@@ -195,6 +240,16 @@ export const reportConversation = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+
+    if (args.reporterId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+
+    if (args.conversationId) {
+      await requireConversationMember(ctx, args.conversationId);
+    }
+
     return await ctx.db.insert("conversation_reports", {
       reporterId: args.reporterId,
       targetId: args.targetId,
@@ -209,7 +264,7 @@ export const reportConversation = mutation({
  * One-time backfill: create membership rows for conversations that predate
  * `conversation_members`. Safe to run repeatedly.
  */
-export const backfillMembers = mutation({
+export const backfillMembers = internalMutation({
   args: {},
   handler: async (ctx) => {
     const all = await ctx.db.query("conversations").take(5000);

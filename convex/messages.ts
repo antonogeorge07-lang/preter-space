@@ -111,6 +111,15 @@ export const update = mutation({
     edited: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message unavailable");
+
+    const { identity } = await requireConversationMember(ctx, message.conversationId);
+
+    if (message.senderId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+
     const { messageId, ...patch } = args;
     const clean = Object.fromEntries(Object.entries(patch).filter(([, v2]) => v2 !== undefined));
     if (Object.keys(clean).length === 0) return messageId;
@@ -122,6 +131,15 @@ export const update = mutation({
 export const remove = mutation({
   args: { messageId: v.id("messages") },
   handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message unavailable");
+
+    const { identity } = await requireConversationMember(ctx, message.conversationId);
+
+    if (message.senderId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+
     const reactions = await ctx.db
       .query("reactions")
       .withIndex("by_message", (q) => q.eq("messageId", args.messageId))
@@ -147,6 +165,12 @@ export const insertMessage = mutation({
     meta: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    const { identity } = await requireConversationMember(ctx, args.conversationId);
+
+    if (args.senderId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+
     const messageId = await ctx.db.insert("messages", { ...args, createdAt: Date.now() });
     await ctx.db.patch(args.conversationId, { lastMessageTime: Date.now() });
     return messageId;
@@ -208,6 +232,16 @@ export const sendWithTranslation = action({
     meta: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity?.subject || !identity.email) {
+      throw new Error("Unauthorized");
+    }
+
+    if (args.senderId.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
+
     const aiConfigured = isAIConfigured();
     const translations: Record<string, string> = {};
     let detectedLanguage = "";

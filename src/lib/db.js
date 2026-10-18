@@ -261,11 +261,14 @@ const auth = {
     }
   },
   async logout(redirect = "/landing") {
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      /* ignore */
+    const { error } = await supabase.auth.signOut({
+      scope: "global",
+    });
+
+    if (error) {
+      throw new Error("Unable to complete sign out");
     }
+
     window.location.href = redirect;
   },
 };
