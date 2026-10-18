@@ -1,13 +1,36 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireIdentity } from "./lib/authorization";
+
+function publicUser(user: {
+  _id: unknown;
+  name: string;
+  email: string;
+  language?: string;
+  avatarUrl?: string;
+  isOnline?: boolean;
+  lastSeen?: number;
+}) {
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    language: user.language,
+    avatarUrl: user.avatarUrl,
+    isOnline: user.isOnline,
+    lastSeen: user.lastSeen,
+  };
+}
 
 export const getByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    await requireIdentity(ctx);
+    const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .unique();
+    return user ? publicUser(user) : null;
   },
 });
 
@@ -15,6 +38,7 @@ export const getByEmail = query({
 export const search = query({
   args: { term: v.string(), excludeEmail: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    await requireIdentity(ctx);
     const term = args.term.trim();
     if (term.length < 2) return [];
 
@@ -35,7 +59,7 @@ export const search = query({
     for (const u of [...byName, ...byEmail]) {
       if (u.email === args.excludeEmail || seen.has(u._id)) continue;
       seen.add(u._id);
-      out.push(u);
+      out.push(publicUser(u));
       if (out.length >= 20) break;
     }
     return out;
@@ -50,6 +74,10 @@ export const createOrUpdateUser = mutation({
     avatarUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (args.email.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
     const existing = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -84,8 +112,12 @@ export const toggleBlockUser = mutation({
     targetUserId: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error("User not found");
+    if (user.email.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
 
     const currentBlocked = user.blockedUsers || [];
     const isBlocked = currentBlocked.includes(args.targetUserId);
@@ -102,6 +134,10 @@ export const toggleBlockUser = mutation({
 export const toggleBlockByEmail = mutation({
   args: { email: v.string(), targetEmail: v.string() },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (args.email.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
     const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -122,8 +158,12 @@ export const toggleBlockByEmail = mutation({
 export const deleteAccount = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
     const user = await ctx.db.get(args.userId);
-    if (!user) return null;
+    if (!user) throw new Error("User not found");
+    if (user.email.toLowerCase() !== identity.email.toLowerCase()) {
+      throw new Error("Forbidden");
+    }
 
     const userMessages = await ctx.db
       .query("messages")
@@ -147,6 +187,7 @@ export const deleteAccount = mutation({
 export const languagesByEmail = query({
   args: { emails: v.array(v.string()) },
   handler: async (ctx, args) => {
+    await requireIdentity(ctx);
     const out: Record<string, string> = {};
     for (const email of args.emails) {
       const user = await ctx.db
