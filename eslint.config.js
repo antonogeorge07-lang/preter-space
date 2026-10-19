@@ -36,5 +36,14 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // Transitional type boundaries for ported JavaScript modules and
+    // heterogeneous React email preview component props.
+    // Keep strict no-explicit-any checks enabled elsewhere.
+    files: ["src/legacy-modules.d.ts", "src/lib/email-templates/auth-preview.server.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
   eslintPluginPrettier,
 );

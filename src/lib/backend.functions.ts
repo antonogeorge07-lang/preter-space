@@ -3,6 +3,8 @@ import { requestAI, parseAIJson } from "@/lib/ai/provider";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
 const aiInput = z.object({
   prompt: z.string().trim().min(1).max(4000),
 });
@@ -31,7 +33,7 @@ export const invokeLLM = createServerFn({ method: "POST" })
       ],
     });
 
-    return parseAIJson(content) as Record<string, any>;
+    return parseAIJson(content) as Record<string, JsonValue>;
   });
 
 export const transcribeAudio = createServerFn({ method: "POST" })
