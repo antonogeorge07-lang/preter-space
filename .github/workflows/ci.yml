@@ -67,6 +67,21 @@ jobs:
       - name: Production build
         run: bun run build
 
+      - name: Install Playwright Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: Verify public UI
+        run: bunx playwright test
+
+      - name: Upload UI failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preter-ui-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Scan tracked environment files
         run: |
           python3 - <<'PY'
