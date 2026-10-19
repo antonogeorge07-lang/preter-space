@@ -13,15 +13,12 @@ function operation(path, name) {
   const match = re.exec(text);
   assert.ok(match, `${name} is missing`);
   const rest = text.slice(match.index);
-  const next = rest.slice(match[0].length).search(
-    /\nexport const \w+ = /,
-  );
+  const next = rest.slice(match[0].length).search(/\nexport const \w+ = /);
   return next < 0 ? rest : rest.slice(0, match[0].length + next);
 }
 
 const memberGuard = /requireConversationMember\s*\(/;
-const identityGuard =
-  /requireIdentity\s*\(|ctx\.auth\.getUserIdentity\s*\(/;
+const identityGuard = /requireIdentity\s*\(|ctx\.auth\.getUserIdentity\s*\(/;
 
 for (const name of ["list", "listPage", "send"]) {
   test(`message ${name} checks membership`, () => {
@@ -40,10 +37,7 @@ for (const name of ["update", "remove", "insertMessage"]) {
 }
 
 test("translation action validates caller identity", () => {
-  assert.match(
-    operation("convex/messages.ts", "sendWithTranslation"),
-    identityGuard,
-  );
+  assert.match(operation("convex/messages.ts", "sendWithTranslation"), identityGuard);
 });
 
 for (const name of [
@@ -68,25 +62,16 @@ for (const name of [
 
 for (const name of ["generateUploadUrl", "getUrl"]) {
   test(`file ${name} checks authenticated identity`, () => {
-    assert.match(
-      operation("convex/files.ts", name),
-      identityGuard,
-    );
+    assert.match(operation("convex/files.ts", name), identityGuard);
   });
 }
 
 test("Convex has JWT authentication configuration", () => {
-  assert.match(
-    source("convex/auth.config.ts"),
-    /customJwt/,
-  );
+  assert.match(source("convex/auth.config.ts"), /customJwt/);
 });
 
 test("Convex client attaches an auth provider", () => {
-  assert.match(
-    source("src/lib/convex.tsx"),
-    /ConvexProviderWithAuth/,
-  );
+  assert.match(source("src/lib/convex.tsx"), /ConvexProviderWithAuth/);
 });
 
 test("logout does not silently discard sign-out failure", () => {
