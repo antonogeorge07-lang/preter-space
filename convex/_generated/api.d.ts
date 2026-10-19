@@ -12,6 +12,8 @@ import type * as authEmail from "../authEmail.js";
 import type * as calls from "../calls.js";
 import type * as conversations from "../conversations.js";
 import type * as files from "../files.js";
+import type * as lib_ai from "../lib/ai.js";
+import type * as lib_authorization from "../lib/authorization.js";
 import type * as messages from "../messages.js";
 import type * as presence from "../presence.js";
 import type * as push from "../push.js";
@@ -32,6 +34,8 @@ declare const fullApi: ApiFromModules<{
   calls: typeof calls;
   conversations: typeof conversations;
   files: typeof files;
+  "lib/ai": typeof lib_ai;
+  "lib/authorization": typeof lib_authorization;
   messages: typeof messages;
   presence: typeof presence;
   push: typeof push;
